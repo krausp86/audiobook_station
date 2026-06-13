@@ -4,7 +4,7 @@ import { is } from '@electron-toolkit/utils';
 import type { IpcCommands } from '@shared/ipc-contract';
 import { openDatabase } from './db';
 
-function createWindow(): void {
+function createWindow(dbError?: string): BrowserWindow {
   const win = new BrowserWindow({
     width: 800,
     height: 480,
@@ -29,7 +29,12 @@ function createWindow(): void {
 
   win.webContents.on('did-finish-load', () => {
     win.webContents.send('app:ready', { ts: Date.now() });
+    if (dbError) {
+      win.webContents.send('app:dbError', { message: dbError });
+    }
   });
+
+  return win;
 }
 
 ipcMain.handle('app:getVersion', (): IpcCommands['app:getVersion']['response'] => {
@@ -37,16 +42,18 @@ ipcMain.handle('app:getVersion', (): IpcCommands['app:getVersion']['response'] =
 });
 
 app.whenReady().then(() => {
+  let dbError: string | undefined;
   try {
     openDatabase();
   } catch (err) {
+    dbError = err instanceof Error ? err.message : String(err);
     console.error('[db] Failed to open database:', err);
   }
 
-  createWindow();
+  createWindow(dbError);
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) createWindow(dbError);
   });
 });
 

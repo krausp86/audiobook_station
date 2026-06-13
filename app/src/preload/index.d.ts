@@ -1,7 +1,1 @@
-import type { HoermondBridge } from '../shared/ipc-contract';
-
-declare global {
-  interface Window {
-    hoermond: HoermondBridge;
-  }
-}
+// Window type augmentation is declared in src/renderer/src/global.d.ts

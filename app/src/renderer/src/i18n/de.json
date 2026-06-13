@@ -1,3 +1,4 @@
 {
-  "boot.starting": "Hörmond startet"
+  "boot.starting": "Hörmond startet",
+  "error.db": "Datenbank-Fehler"
 }
