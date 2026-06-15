@@ -1,9 +1,18 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
-import type { IpcCommands } from '@shared/ipc-contract';
-import { openDatabase } from './db';
+import { getDb } from './db';
+import { registerIpcHandlers } from './ipc/register';
+import { startIdleLoop } from './mpd/idle';
+import { startPositionPersistence } from './player/persist';
+import { resumeLast } from './player/resume';
+import { startSyncLogBridge } from './sync/watch-log';
 
+/**
+ * Create the main application window.
+ * @param dbError optional database initialization error to display
+ * @returns the created BrowserWindow
+ */
 function createWindow(dbError?: string): BrowserWindow {
   const win = new BrowserWindow({
     width: 800,
@@ -17,7 +26,7 @@ function createWindow(dbError?: string): BrowserWindow {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false, // required on Pi for native modules (ADR-3)
+      sandbox: false,
     },
   });
 
@@ -37,24 +46,41 @@ function createWindow(dbError?: string): BrowserWindow {
   return win;
 }
 
-ipcMain.handle('app:getVersion', (): IpcCommands['app:getVersion']['response'] => {
-  return { version: app.getVersion() };
-});
-
 app.whenReady().then(() => {
   let dbError: string | undefined;
   try {
-    openDatabase();
+    getDb(); // initialize + run migrations
   } catch (err) {
     dbError = err instanceof Error ? err.message : String(err);
     console.error('[db] Failed to open database:', err);
   }
 
-  createWindow(dbError);
+  // Register all IPC command handlers
+  registerIpcHandlers(() => BrowserWindow.getAllWindows()[0] ?? null);
+
+  const win = createWindow(dbError);
+
+  // Start background services
+  const stopIdle = startIdleLoop(() => BrowserWindow.getAllWindows()[0] ?? null);
+  const stopPersist = startPositionPersistence();
+  const stopSyncBridge = startSyncLogBridge(() => BrowserWindow.getAllWindows()[0] ?? null);
+
+  // Auto-resume last played item (after idle loop starts so player:state is pushed)
+  void resumeLast();
+
+  // Cleanup on app quit
+  app.on('before-quit', () => {
+    stopIdle();
+    stopPersist();
+    stopSyncBridge();
+  });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow(dbError);
   });
+
+  // suppress unused warning
+  void win;
 });
 
 app.on('window-all-closed', () => {

@@ -1,17 +1,88 @@
+/** Represents a playable audio/video item (audiobook or music track). */
+export interface MediaItem {
+  path: string;         // relativer Pfad in /media, z.B. "audiobooks/Autor/Titel"
+  type: 'audiobook' | 'music';
+  title: string;
+  artist?: string;
+  duration?: number;    // Sekunden gesamt
+  coverPath?: string;   // lokaler Pfad oder undefined
+  progressPercent: number; // 0–100
+  lastPlayed?: string;  // ISO-8601
+  status: 'new' | 'in_progress' | 'done';
+}
+
+/** Library contents, split into recently-played and all items. */
+export interface LibraryListResponse {
+  recentlyPlayed: MediaItem[];  // Fortschritt > 0% und < 100%, nach lastPlayed desc
+  all: MediaItem[];             // Rest (neu + fertig), alphabetisch nach title
+}
+
+/** Current player state snapshot. */
+export interface PlayerState {
+  status: 'playing' | 'paused' | 'stopped';
+  currentPath: string | null;  // relativer Pfad zu /media oder null
+  position: number;            // Sekunden
+  duration: number | null;     // Sekunden oder null
+}
+
+/** Sync operation status event. */
+export interface SyncStatus {
+  phase: 'started' | 'completed' | 'error';
+  ts: string;      // ISO-8601
+  message?: string;
+}
+
 /** Commands: Renderer -> Main (Request/Response, via ipcRenderer.invoke). */
 export interface IpcCommands {
   'app:getVersion': {
     request: void;
     response: { version: string };
   };
-  // Future commands (player:play, db:getProgress, ...) go here.
+  'library:list': {
+    request: void;
+    response: LibraryListResponse;
+  };
+  'library:rescan': {
+    request: void;
+    response: { triggered: boolean };
+  };
+  'player:play': {
+    request: { path: string; position?: number };
+    response: { ok: boolean };
+  };
+  'player:pause': {
+    request: void;
+    response: { ok: boolean };
+  };
+  'player:stop': {
+    request: void;
+    response: { ok: boolean };
+  };
+  'player:seek': {
+    request: { position: number };
+    response: { ok: boolean };
+  };
+  'player:getState': {
+    request: void;
+    response: PlayerState;
+  };
+  'onboarding:getSeen': {
+    request: void;
+    response: { seen: boolean };
+  };
+  'onboarding:setSeen': {
+    request: { seen: boolean };
+    response: { ok: boolean };
+  };
 }
 
 /** Events: Main -> Renderer (push, via webContents.send). */
 export interface IpcEvents {
   'app:ready': { ts: number };
   'app:dbError': { message: string };
-  // Future events (player:stateChanged, display:dimmed, ...) go here.
+  'player:state': PlayerState;
+  'library:updated': { ts: number };
+  'sync:status': SyncStatus;
 }
 
 export type IpcCommandChannel = keyof IpcCommands;
@@ -30,8 +101,25 @@ export interface HoermondBridge {
 }
 
 /** Whitelist of allowed channels — Preload validates against these (security). */
-export const ALLOWED_COMMANDS: IpcCommandChannel[] = ['app:getVersion'];
-export const ALLOWED_EVENTS: IpcEventChannel[] = ['app:ready', 'app:dbError'];
+export const ALLOWED_COMMANDS: IpcCommandChannel[] = [
+  'app:getVersion',
+  'library:list',
+  'library:rescan',
+  'player:play',
+  'player:pause',
+  'player:stop',
+  'player:seek',
+  'player:getState',
+  'onboarding:getSeen',
+  'onboarding:setSeen',
+];
+export const ALLOWED_EVENTS: IpcEventChannel[] = [
+  'app:ready',
+  'app:dbError',
+  'player:state',
+  'library:updated',
+  'sync:status',
+];
 
 /**
  * Events that are replayed to late subscribers (one-shot lifecycle events).

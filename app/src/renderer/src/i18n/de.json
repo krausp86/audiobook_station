@@ -1,4 +1,14 @@
 {
   "boot.starting": "Hörmond startet",
-  "error.db": "Datenbank-Fehler"
+  "error.db": "Datenbank-Fehler",
+  "library.recentlyPlayed": "Zuletzt gehört",
+  "library.all": "Alle",
+  "library.audiobooks": "Hörbücher",
+  "library.music": "Musik",
+  "library.empty": "Noch keine Medien vorhanden",
+  "player.playing": "Spielt",
+  "player.paused": "Pausiert",
+  "player.stopped": "Gestoppt",
+  "player.pause": "Pause",
+  "player.stop": "Stopp"
 }

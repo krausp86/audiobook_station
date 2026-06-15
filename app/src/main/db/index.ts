@@ -33,3 +33,18 @@ function runMigrations(db: Database.Database): void {
   });
   tx(current);
 }
+
+/**
+ * Database singleton instance. Lazily initialized on first call to getDb().
+ */
+let dbSingleton: Database.Database | null = null;
+
+/**
+ * Get the singleton database instance.
+ * Initializes on first call; subsequent calls return cached instance.
+ * @returns connected Database instance with all migrations applied
+ */
+export function getDb(): Database.Database {
+  if (!dbSingleton) dbSingleton = openDatabase();
+  return dbSingleton;
+}
