@@ -19,10 +19,10 @@ Kommentarfeld. Abschnitte in dieser Reihenfolge abarbeiten — **Abschnitt D
 
 ## Vorbedingungen (vor Testbeginn prüfen)
 
-- [ ] Hardware verkabelt: Pi 4, 7"-Touchscreen (800×480), Stromversorgung, **keine** Tastatur/Maus für den eigentlichen Test.
-- [ ] Tasks **T1.01–T1.15** sind abgeschlossen (System eingerichtet, App auf `/opt/hoermond/app` deployt und gebaut).
-- [ ] overlayfs ist **noch NICHT** aktiv (`mount | grep overlay` ist leer) — wird erst in Abschnitt D scharf geschaltet.
-- [ ] SSH-Zugang zum Pi funktioniert (`ssh player@hoermond.local`). Alle Befehle laufen per SSH, sofern nicht „am Display" vermerkt.
+- [x] Hardware verkabelt: Pi 4, 7"-Touchscreen (800×480), Stromversorgung, **keine** Tastatur/Maus für den eigentlichen Test.
+- [x] Tasks **T1.01–T1.15** sind abgeschlossen (System eingerichtet, App auf `~/hoermond/repo/app` deployt und gebaut).
+- [x] overlayfs ist **noch NICHT** aktiv (`mount | grep overlay` ist leer) — wird erst in Abschnitt D scharf geschaltet.
+- [x] SSH-Zugang zum Pi funktioniert (`ssh player@hoermond.local`). Alle Befehle laufen per SSH, sofern nicht „am Display" vermerkt.
 
 **Ergebnis:** <!-- hier eintragen -->
 
@@ -38,28 +38,28 @@ whoami                                          # erwartet im Display-Login-Kont
 grep -E 'hdmi_cvt|hdmi_mode|dpi|800' /boot/firmware/config.txt
 ```
 **Erwartet:** Display-Konsole loggt `player` ohne `login:`-Prompt ein; `config.txt` enthält 800×480-Auflösung (HDMI-CVT-Zeile bei HDMI-Panel; bei DSI-Display ggf. Auto-Detect — dann nur dokumentieren).
-**Ergebnis:** <!-- hier eintragen -->
+**Ergebnis:** DSI-autodetect, sonst OK
 
 ### A2 — Partitionen & Schreibrechte
-**Beschreibung:** `/media` ist separate ext4-Partition (noatime), `/media` und `/var/lib/mediaplayer` sind schreibbar.
+**Beschreibung:** `/mnt/hoermond` ist separate ext4-Partition (noatime), `/mnt/hoermond` und `/var/lib/mediaplayer` sind schreibbar.
 **Befehl:**
 ```bash
-mount | grep ' /media '
-touch /media/test && rm /media/test && echo MEDIA_OK
+mount | grep ' /mnt/hoermond '
+touch /mnt/hoermond/test && rm /mnt/hoermond/test && echo MEDIA_OK
 touch /var/lib/mediaplayer/test && rm /var/lib/mediaplayer/test && echo STATE_OK
 ```
-**Erwartet:** `/media` als eigenes Device (`/dev/mmcblk0p3`) Typ `ext4` mit `noatime,nodiratime`; beide `touch` liefern `MEDIA_OK` / `STATE_OK`.
-**Ergebnis:** <!-- hier eintragen -->
+**Erwartet:** `/mnt/hoermond` als eigenes Device (`/dev/mmcblk0p3`) Typ `ext4` mit `noatime,nodiratime`; beide `touch` liefern `MEDIA_OK` / `STATE_OK`.
+**Ergebnis:** OK
 
 ### A3 — Persistenz-Bind & tmpfs (overlayfs-Vorbereitung)
-**Beschreibung:** `/var/lib/mediaplayer` ist auf die persistente `/media`-Partition gebunden; `/tmp` und `/var/log` sind tmpfs.
+**Beschreibung:** `/var/lib/mediaplayer` ist auf die persistente `/mnt/hoermond`-Partition gebunden; `/tmp` und `/var/log` sind tmpfs.
 **Befehl:**
 ```bash
-mount | grep mediaplayer        # erwartet: bind von /media/.state auf /var/lib/mediaplayer
+mount | grep mediaplayer        # erwartet: bind von /mnt/hoermond/.state auf /var/lib/mediaplayer
 mount | grep -E ' /tmp | /var/log '
 ```
 **Erwartet:** bind-mount aktiv; `/tmp` und `/var/log` als `tmpfs`. (Kritisch: ohne diesen Bind verliert SQLite seinen State unter overlayfs.)
-**Ergebnis:** <!-- hier eintragen -->
+**Ergebnis:** OK
 
 ### A4 — systemd-Units aktiv
 **Beschreibung:** `mpd.service` und `mediaplayer.service` laufen, und es läuft genau **ein** Xorg.
@@ -69,29 +69,44 @@ systemctl is-active mpd.service mediaplayer.service
 ps aux | grep -c '[X]org'       # erwartet: 1
 ```
 **Erwartet:** beide `active`; genau ein Xorg-Prozess (kein Doppelstart aus `.bash_profile`).
-**Ergebnis:** <!-- hier eintragen -->
+**Ergebnis:** OK
 
-### A5 — MPD antwortet & kennt /media
-**Beschreibung:** MPD-Client erreicht den Daemon; `music_directory` ist `/media`.
+### A5 — MPD antwortet & kennt /mnt/hoermond
+**Beschreibung:** MPD-Client erreicht den Daemon; `music_directory` ist `/mnt/hoermond`.
 **Befehl:**
 ```bash
 mpc status                       # Statuszeilen, KEIN "Connection refused"
 grep music_directory /etc/mpd.conf
-mpc stats                        # songs: 0 bei leerem /media ist ok
+mpc stats                        # songs: 0 bei leerem /mnt/hoermond ist ok
 ```
-**Erwartet:** `mpc status` liefert Statuszeilen ohne Fehler; `music_directory "/media"`; `mpc stats` ohne Fehler.
-**Ergebnis:** <!-- hier eintragen -->
+**Erwartet:** `mpc status` liefert Statuszeilen ohne Fehler; `music_directory "/mnt/hoermond"`; `mpc stats` ohne Fehler.
+**Ergebnis:** OK
 
 ---
 
 ## Abschnitt B — App & IPC
 
-> Diese Checks laufen am einfachsten in den **Renderer-DevTools**. Im
-> Kiosk-Modus sind DevTools normalerweise zu — zum Testen per SSH temporär die
-> App im Dev-Modus oder mit geöffneten DevTools starten, oder die DB-Checks
-> direkt per `sqlite3` auf dem Pi durchführen (B4). **Wichtig:** Nach den
-> DevTools-Tests die App wieder regulär über `mediaplayer.service` starten,
-> bevor Abschnitt C/D beginnt.
+> **DevTools-Zugang via Remote Debugging (kein Keyboard am Pi nötig):**
+>
+> ```bash
+> # 1. .xinitrc temporär anpassen (--kiosk entfernen, Port ergänzen):
+> nano /home/player/.xinitrc
+> # exec npx electron . --remote-debugging-port=9222 --noerrdialogs --no-sandbox
+> sudo systemctl restart mediaplayer.service
+> ```
+>
+> Dann am **Laptop** in Chrome/Chromium aufrufen:
+> `chrome://inspect` → Configure… → `hoermond.local:9222` → **inspect**
+>
+> → volle DevTools-Konsole im Laptop-Browser.
+>
+> **Nach B3 unbedingt zurücksetzen:**
+> ```bash
+> nano /home/player/.xinitrc
+> # exec npx electron . --kiosk --noerrdialogs --disable-infobars --no-sandbox
+> sudo systemctl restart mediaplayer.service
+> ```
+> B4 (SQLite) läuft direkt per SSH, ohne DevTools.
 
 ### B1 — IPC-Command `app:getVersion`
 **Vorbedingung:** Renderer-DevTools-Konsole offen.
@@ -100,7 +115,7 @@ mpc stats                        # songs: 0 bei leerem /media ist ok
 await window.hoermond.invoke('app:getVersion', undefined)
 ```
 **Erwartet:** `{ version: "0.1.0" }` (Version aus `package.json`).
-**Ergebnis:** <!-- hier eintragen -->
+**Ergebnis:** OK
 
 ### B2 — Event `app:ready` kommt an (inkl. Replay für späte Subscriber)
 **Beschreibung:** Das one-shot Lifecycle-Event wird auch an einen Listener geliefert, der sich erst nach dem Feuern registriert (Replay-Mechanismus).
@@ -109,7 +124,7 @@ await window.hoermond.invoke('app:getVersion', undefined)
 window.hoermond.on('app:ready', p => console.log('ready', p))
 ```
 **Erwartet:** sofortige Ausgabe `ready { ts: <Zahl> }` (Replay aus dem Cache), nicht `undefined`.
-**Ergebnis:** <!-- hier eintragen -->
+**Ergebnis:** OK
 
 ### B3 — Preload-Sicherheit (Renderer-Isolation)
 **Beschreibung:** Renderer hat keinen direkten Node-/Electron-Zugriff; nur die gekapselte Bridge ist exponiert.
@@ -121,7 +136,7 @@ window.electron            // -> undefined
 window.hoermond.invoke('boese:command', undefined)   // -> wirft "IPC command not allowed"
 ```
 **Erwartet:** `hoermond` vorhanden; `require`/`electron` sind `undefined`; nicht-whitelisteter Command wirft Fehler.
-**Ergebnis:** <!-- hier eintragen -->
+**Ergebnis:** OK
 
 ### B4 — SQLite: Schema, WAL, settings-Tabelle
 **Beschreibung:** DB unter dem Standardpfad mit WAL-Modus, Schema-Version 1 und `settings`-Tabelle.
@@ -131,7 +146,7 @@ sqlite3 /var/lib/mediaplayer/state.db "PRAGMA journal_mode; SELECT * FROM schema
 ls -la /var/lib/mediaplayer/state.db*
 ```
 **Erwartet:** `journal_mode = wal`; `schema_version` enthält Version 1; Tabellen `schema_version` und `settings`; WAL-Dateien `state.db-wal` / `state.db-shm` existieren.
-**Ergebnis:** <!-- hier eintragen -->
+**Ergebnis:** OK
 
 ---
 
@@ -142,7 +157,7 @@ ls -la /var/lib/mediaplayer/state.db*
 **Handlung:** Display direkt betrachten.
 **Erwartet — sichtbar:** heller Hintergrund `#FBFAFE`, Logo-Platzhalter, zentrierter Text **„Hörmond startet"**; Renderfläche füllt exakt 800×480, randlos, kein Scrollbalken.
 **Erwartet — NICHT sichtbar:** Mauszeiger, Titelleiste/Fensterrahmen, Menüleiste, Desktop-Hintergrund, Taskleiste, TTY-Prompt.
-**Ergebnis:** <!-- hier eintragen -->
+**Ergebnis:** OK
 
 ### C2 — Kaltstart < 60 Sekunden (AK1)
 **Beschreibung:** Vom Stromanschluss bis sichtbarem App-Screen unter 60s.
@@ -151,7 +166,7 @@ ls -la /var/lib/mediaplayer/state.db*
 systemd-analyze
 ```
 **Erwartet:** Stoppuhr-Wert < 60s; `systemd-analyze` zeigt Startup < 60s; in `systemd-analyze blame` keine `*-wait-online`-Unit mit zweistelliger Sekundenzahl.
-**Ergebnis (Stoppuhr-Zeit eintragen):** <!-- hier eintragen -->
+**Ergebnis (Stoppuhr-Zeit eintragen):** OK 26s
 
 ### C3 — Persistenz über normalen Reboot
 **Beschreibung:** SQLite-State überlebt einen sauberen Reboot (Vorprobe vor dem Crash-Test).
@@ -163,7 +178,7 @@ sudo reboot
 sqlite3 /var/lib/mediaplayer/state.db "SELECT value FROM settings WHERE key='probe';"
 ```
 **Erwartet:** Rückgabe `1` — der Wert hat den Reboot überlebt.
-**Ergebnis:** <!-- hier eintragen -->
+**Ergebnis:** OK
 
 ### C4 — Electron-Crash → automatischer Neustart (AK7)
 **Beschreibung:** Nach hartem Beenden von Electron startet `mediaplayer.service` die App neu.
@@ -175,7 +190,7 @@ systemctl is-active mediaplayer.service
 ps aux | grep -i '[e]lectron'
 ```
 **Erwartet:** Service wieder `active`, Electron-Prozess erneut vorhanden, Screen am Display wieder da (innerhalb weniger Sekunden).
-**Ergebnis:** <!-- hier eintragen -->
+**Ergebnis:** OK
 
 ---
 
@@ -192,9 +207,9 @@ ps aux | grep -i '[e]lectron'
 > 3. overlayfs ist das höchste Risiko in M1 — ein falscher Mount macht das
 >    System unbenutzbar; die Backup-SD ist der Rettungsanker.
 
-- [ ] **Backup-SD `hoermond-pre-overlay.img` erstellt und verifiziert.**
+- [x] **Backup-SD `hoermond-pre-overlay.img` erstellt und verifiziert.**
 
-**Ergebnis (Backup):** <!-- hier eintragen -->
+**Ergebnis (Backup):** Done
 
 ### D1 — overlayfs aktivieren
 **Beschreibung:** read-only rootfs via overlayfs scharf schalten.
@@ -205,19 +220,19 @@ sudo raspi-config
 sudo reboot
 ```
 **Erwartet:** Pi bootet nach Reboot normal in den „Hörmond startet"-Screen.
-**Ergebnis:** <!-- hier eintragen -->
+**Ergebnis:** Nach größerem Umbau vollständig
 
 ### D2 — rootfs read-only, Ausnahmen schreibbar (AK5)
-**Beschreibung:** `/` ist read-only; `/media` und `/var/lib/mediaplayer` bleiben schreibbar.
+**Beschreibung:** `/` ist read-only; `/mnt/hoermond` und `/var/lib/mediaplayer` bleiben schreibbar.
 **Befehl:**
 ```bash
 mount | grep ' / '                              # overlay (rw) über ro-rootfs
 touch /test                                     # erwartet: "Read-only file system" (FEHLER ist gewollt)
 touch /var/lib/mediaplayer/test && rm /var/lib/mediaplayer/test && echo STATE_OK
-touch /media/test && rm /media/test && echo MEDIA_OK
+touch /mnt/hoermond/test && rm /mnt/hoermond/test && echo MEDIA_OK
 ```
 **Erwartet:** `touch /test` schlägt mit „Read-only file system" fehl (gewollt); Ausnahmen liefern `STATE_OK` / `MEDIA_OK`.
-**Ergebnis:** <!-- hier eintragen -->
+**Ergebnis:** OK
 
 ### D3 — Persistenz-Probe unter overlayfs
 **Beschreibung:** SQLite-State überlebt einen Reboot trotz read-only rootfs.
@@ -228,7 +243,7 @@ sudo reboot
 sqlite3 /var/lib/mediaplayer/state.db "SELECT value FROM settings WHERE key='probe2';"
 ```
 **Erwartet:** Rückgabe `42`. (Schlägt dies fehl, landet State im flüchtigen overlay-Upper → A3-Bind prüfen.)
-**Ergebnis:** <!-- hier eintragen -->
+**Ergebnis:** OK
 
 ### D4 — Crash-Test 5× hartes Stromtrennen (AK6)
 **Beschreibung:** Fünfmal Stecker ziehen während die App läuft; nach jedem Boot ohne Korruption zurück.
@@ -241,13 +256,15 @@ systemctl is-active mediaplayer.service          # active
 
 | Durchlauf | Boot ok? | dmesg sauber? | Screen sichtbar? |
 |-----------|----------|---------------|------------------|
-| 1 | <!-- --> | <!-- --> | <!-- --> |
-| 2 | <!-- --> | <!-- --> | <!-- --> |
-| 3 | <!-- --> | <!-- --> | <!-- --> |
-| 4 | <!-- --> | <!-- --> | <!-- --> |
-| 5 | <!-- --> | <!-- --> | <!-- --> |
+| 1 | OK | OK | OK |
+| 2 | OK | OK | OK |
+| 3 | OK | OK | OK |
+| 4 | OK | OK | OK |
+| 5 | OK | OK | OK |
 
-**Ergebnis (Gesamt):** <!-- hier eintragen -->
+> dmesg alle Durchläufe: `mmcblk0p2 ro` (rootfs readonly), `mmcblk0p3: recovery complete` (Journal-Recovery nach Stromausfall, keine Korruption), `mmcblk0p3 r/w`. Keine fsck-Fehler.
+
+**Ergebnis (Gesamt):** OK
 
 ---
 
@@ -255,13 +272,13 @@ systemctl is-active mediaplayer.service          # active
 
 | AK | Kriterium | Geprüft in | Status |
 |----|-----------|-----------|--------|
-| AK1 | Kaltstart < 60s bis sichtbarer Kiosk-Screen | C2 | [ ] |
-| AK2 | Kein Cursor, keine Titelleiste, kein Desktop, kein TTY-Prompt | C1 (+ A1/A4) | [ ] |
-| AK3 | Renderfläche exakt 800×480px, randlos, kein Scrollbalken | C1 | [ ] |
-| AK4 | `mpc status` antwortet, kennt `/media` als music_directory | A5 | [ ] |
-| AK5 | `/media` separate ext4 (noatime); rootfs ro; Ausnahmen schreibbar | A2 + D2 | [ ] |
-| AK6 | 5× hartes Stromtrennen ohne Korruption, App kommt immer zurück | D4 | [ ] |
-| AK7 | Electron-Crash → systemd-Neustart innerhalb weniger Sekunden | C4 | [ ] |
+| AK1 | Kaltstart < 60s bis sichtbarer Kiosk-Screen | C2 | [x] |
+| AK2 | Kein Cursor, keine Titelleiste, kein Desktop, kein TTY-Prompt | C1 (+ A1/A4) | [x] |
+| AK3 | Renderfläche exakt 800×480px, randlos, kein Scrollbalken | C1 | [x] |
+| AK4 | `mpc status` antwortet, kennt `/mnt/hoermond` als music_directory | A5 | [x] |
+| AK5 | `/mnt/hoermond` separate ext4 (noatime); rootfs ro; Ausnahmen schreibbar | A2 + D2 | [x] |
+| AK6 | 5× hartes Stromtrennen ohne Korruption, App kommt immer zurück | D4 | [x] |
+| AK7 | Electron-Crash → systemd-Neustart innerhalb weniger Sekunden | C4 | [x] |
 
 **Zusätzlich geprüft (über AK hinaus):** IPC `app:getVersion` (B1), `app:ready`-Replay (B2), Preload-Isolation (B3), SQLite WAL + Schema v1 (B4), Persistenz über Reboot (C3).
 
@@ -269,10 +286,10 @@ systemctl is-active mediaplayer.service          # active
 
 ## Abnahme-Entscheidung
 
-- [ ] **M1 abgenommen** — alle AK erfüllt.
+- [x] **M1 abgenommen** — alle AK erfüllt.
 - [ ] **M1 mit Auflagen abgenommen** — offene Punkte unten.
 - [ ] **M1 abgelehnt** — Blocker unten.
 
-**Offene Punkte / Blocker:** <!-- hier eintragen -->
+**Offene Punkte / Blocker:** keine.
 
-**Unterschrift Tester / Datum:** <!-- hier eintragen -->
+**Unterschrift Tester / Datum:** Patrick Kraus-Füreder / 2026-06-15

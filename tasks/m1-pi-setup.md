@@ -94,7 +94,12 @@ Am Display: Konsole zeigt Prompt als `player` ohne `login:`-Abfrage.
 
 ---
 
-## Schritt 2 — Partitionierung: /media
+## Schritt 2 — Partitionierung: /mnt/hoermond
+
+> **Hinweis:** Der Mount-Punkt ist `/mnt/hoermond` (nicht `/media`).
+> `overlayroot=tmpfs` reserviert `/media/root-ro` und `/media/root-rw` intern —
+> eine eigene Partition auf `/media` erzeugt einen systemd-Abhängigkeitszyklus
+> und macht den Pi unbootbar.
 
 ### 2a — Freien Bereich auf der SD ermitteln
 
@@ -119,21 +124,21 @@ lsblk   # neue Partition, z. B. mmcblk0p3, sichtbar
 ```bash
 sudo mkfs.ext4 -L MEDIA /dev/mmcblk0p3
 
-sudo mkdir -p /media
+sudo mkdir -p /mnt/hoermond
 sudo mkdir -p /var/lib/mediaplayer
 
-echo 'LABEL=MEDIA  /media  ext4  defaults,noatime,nodiratime  0  2' | sudo tee -a /etc/fstab
+echo 'LABEL=MEDIA  /mnt/hoermond  ext4  defaults,noatime,nodiratime  0  2' | sudo tee -a /etc/fstab
 sudo mount -a
 
-sudo chown -R player:player /media /var/lib/mediaplayer
+sudo chown -R player:player /mnt/hoermond /var/lib/mediaplayer
 ```
 
 ### 2d — Verifikation
 
 ```bash
-mount | grep ' /media '
+mount | grep ' /mnt/hoermond '
 # erwartet: .../mmcblk0p3 type ext4 (rw,noatime,nodiratime,...)
-touch /media/test && rm /media/test && echo MEDIA_OK
+touch /mnt/hoermond/test && rm /mnt/hoermond/test && echo MEDIA_OK
 touch /var/lib/mediaplayer/test && rm /var/lib/mediaplayer/test && echo STATE_OK
 ```
 
@@ -193,7 +198,7 @@ sudo chown -R player:player /var/lib/mediaplayer/mpd
 
 ```bash
 sudo tee /etc/mpd.conf >/dev/null <<'EOF'
-music_directory     "/media"
+music_directory     "/mnt/hoermond"
 playlist_directory  "/var/lib/mediaplayer/mpd/playlists"
 db_file             "/var/lib/mediaplayer/mpd/mpd.db"
 log_file            "/var/lib/mediaplayer/mpd/mpd.log"
@@ -219,7 +224,7 @@ EOF
 ```bash
 sudo -u player mpd /etc/mpd.conf
 mpc status        # -> Statuszeilen, KEIN "Connection refused"
-mpc stats         # songs: 0 bei leerem /media ist ok
+mpc stats         # songs: 0 bei leerem /mnt/hoermond ist ok
 mpc kill
 ```
 
@@ -336,12 +341,15 @@ Reboot, Stoppuhr messen: Ziel < 60s bis sichtbarer Screen.
 
 ## Schritt 7 — overlayfs vorbereiten (noch NICHT aktivieren)
 
-### 7a — Persistenten State auf /media auslagern
+> **Wichtig:** Der Bind-Mount geht von `/mnt/hoermond/.state`, nicht von
+> `/media/.state`. Der `/media`-Pfad ist für `overlayroot` intern reserviert.
+
+### 7a — Persistenten State auf /mnt/hoermond auslagern
 
 ```bash
-sudo mkdir -p /media/.state
-sudo rsync -aHAX /var/lib/mediaplayer/ /media/.state/
-echo '/media/.state  /var/lib/mediaplayer  none  bind  0  0' | sudo tee -a /etc/fstab
+sudo mkdir -p /mnt/hoermond/.state
+sudo rsync -aHAX /var/lib/mediaplayer/ /mnt/hoermond/.state/
+echo '/mnt/hoermond/.state  /var/lib/mediaplayer  none  bind  0  0' | sudo tee -a /etc/fstab
 sudo mount -a
 ```
 
@@ -357,7 +365,7 @@ echo 'tmpfs  /var/log  tmpfs  defaults,nosuid,nodev  0  0' | sudo tee -a /etc/fs
 ```bash
 sudo reboot
 ssh player@hoermond.local
-mount | grep mediaplayer      # -> bind von /media/.state
+mount | grep mediaplayer      # -> bind von /mnt/hoermond/.state
 mount | grep -E ' /tmp | /var/log '   # -> tmpfs
 mount | grep overlay          # -> LEER (overlay noch nicht aktiv)
 ls /var/lib/mediaplayer/mpd/  # MPD-State noch vorhanden
@@ -381,21 +389,21 @@ npm --version
 
 ## Schritt 9 — App auf den Pi deployen & bauen
 
-### 9a — Repo vom Laptop rüberschieben
+### 9a — Repo auf dem Pi klonen
 
-Auf dem **Laptop** ausführen:
+Auf dem **Pi** (per SSH) — App landet im Home-Verzeichnis des `player`-Users,
+kein `sudo` nötig:
 
 ```bash
-sudo mkdir -p /opt/hoermond && sudo chown player:player /opt/hoermond
-rsync -aHAX --exclude node_modules --exclude out \
-  /home/kmlpatrick/Privat/repos/audiobook_station/app/ \
-  player@hoermond.local:/opt/hoermond/app/
+mkdir -p ~/hoermond
+git clone <repo-url> ~/hoermond/repo
 ```
 
-> Alternativ direkt auf dem Pi klonen:
+> Alternativ vom **Laptop** per rsync rüberschieben:
 > ```bash
-> git clone <repo-url> /opt/hoermond/repo
-> cp -r /opt/hoermond/repo/app /opt/hoermond/app
+> rsync -aHAX --exclude node_modules --exclude out \
+>   /home/kmlpatrick/Privat/repos/audiobook_station/app/ \
+>   player@hoermond.local:~/hoermond/repo/app/
 > ```
 
 ### 9b — Abhängigkeiten installieren & native Module bauen
@@ -403,7 +411,7 @@ rsync -aHAX --exclude node_modules --exclude out \
 Auf dem **Pi** (per SSH):
 
 ```bash
-cd /opt/hoermond/app
+cd ~/hoermond/repo/app
 npm install
 # better-sqlite3 gegen Electron-ABI neu bauen:
 npx electron-rebuild -f -w better-sqlite3
@@ -429,7 +437,7 @@ xset s off
 xset -dpms
 xset s noblank
 unclutter -idle 0 -root &
-cd /opt/hoermond/app
+cd /home/player/hoermond/repo/app
 exec npx electron . \
   --kiosk --noerrdialogs --disable-infobars --no-sandbox
 EOF
