@@ -51,8 +51,8 @@ Der Pi bootet aus dem Kaltstart ohne Tastatur/Maus direkt in eine Electron-Kiosk
 - [ ] Pi bootet aus Kaltstart ohne angeschlossene Tastatur/Maus in < 60 s in die Kiosk-App.
 - [ ] Kein Mauszeiger sichtbar, keine Fenster-Titelleiste, kein Desktop, kein TTY-Login-Prompt sichtbar.
 - [ ] Renderfläche ist exakt 800 × 480 px, randlos.
-- [ ] `mpc status` auf dem Gerät liefert eine Antwort (MPD läuft, kennt die `/media`-Bibliothek, ggf. leer).
-- [ ] `/media` ist eine separate `ext4`-Partition (`noatime,nodiratime`), per `mount` verifizierbar; Root ist read-only (`touch /test` auf `/` schlägt fehl, `/media` und `/var/lib/mediaplayer` sind schreibbar).
+- [ ] `mpc status` auf dem Gerät liefert eine Antwort (MPD läuft, kennt die `/mnt/hoermond`-Bibliothek, ggf. leer).
+- [ ] `/mnt/hoermond` ist eine separate `ext4`-Partition (`noatime,nodiratime`), per `mount` verifizierbar; Root ist read-only (`touch /test` auf `/` schlägt fehl, `/mnt/hoermond` und `/var/lib/mediaplayer` sind schreibbar).
 - [ ] Stecker-Ziehen während laufender App und anschließender Reboot: System bootet sauber in dieselbe App (mind. 5× wiederholt ohne fsck-Fehler/Korruption).
 - [ ] Electron crasht → Systemd startet die App automatisch neu (per `kill` des Renderer-Prozesses testbar).
 
@@ -60,10 +60,10 @@ Der Pi bootet aus dem Kaltstart ohne Tastatur/Maus direkt in eine Electron-Kiosk
 
 **System**
 - OS-Image: Raspberry Pi OS Lite, Autologin für `player`-User, minimaler X11-Start ohne Window Manager, Cursor unterdrückt (`unclutter`/`-nocursor`). **(M)**
-- Partitionierung: separate `/media` ext4 (`noatime,nodiratime`); `/var/lib/mediaplayer` als beschreibbarer Pfad für SQLite. **(M)**
+- Partitionierung: separate `/mnt/hoermond` ext4 (`noatime,nodiratime`); `/var/lib/mediaplayer` als beschreibbarer Pfad für SQLite. **(M)**
 - overlayfs / read-only rootfs konfigurieren; schreibbare Bereiche (Logs, State-DB, Cover-Cache) explizit ausnehmen. **(L)**
-- Systemd-Units: `mpd.service` (autostart, Bibliothek auf `/media`), `mediaplayer.service` (X11 + Electron `--kiosk --no-sandbox`, `Restart=always`). **(M)**
-- MPD-Grundkonfiguration (`/etc/mpd.conf`): Musikverzeichnis `/media`, ALSA-Sink (BT folgt in M6). **(S)**
+- Systemd-Units: `mpd.service` (autostart, Bibliothek auf `/mnt/hoermond`), `mediaplayer.service` (X11 + Electron `--kiosk --no-sandbox`, `Restart=always`). **(M)**
+- MPD-Grundkonfiguration (`/etc/mpd.conf`): Musikverzeichnis `/mnt/hoermond`, ALSA-Sink (BT folgt in M6). **(S)**
 
 **Backend / App-Gerüst (Electron-Main)**
 - Electron-Projekt mit `contextIsolation`, ohne `nodeIntegration`; Preload-Bridge-Skelett. **(M)**
@@ -89,10 +89,10 @@ Der Pi bootet aus dem Kaltstart ohne Tastatur/Maus direkt in eine Electron-Kiosk
 **Spec-Phase 2 plus den minimal nötigen Player-Kern aus Phase 3.** Dieser Meilenstein macht das Gerät erstmals *nützlich*: Medien landen per Sync auf dem Pi und lassen sich abspielen. Bewusst ein vertikaler Durchstich (Provisorisches UI), kein finales Frontend.
 
 ### Was am Ende läuft / demonstrierbar ist
-Von einem anderen Rechner aus `rsync` über SSH (`media-sync`-User) befüllt `/media`. Der inotify-Watcher löst einen MPD-Rescan aus. Auf dem Touchscreen erscheint eine **provisorische Liste** der erkannten Medien (Text genügt — noch kein Cover-Grid). Tap auf einen Eintrag startet die Wiedergabe über die 3,5-mm-Klinke. Wiedergabeposition wird alle 10 s gespeichert; nach Stecker-Ziehen und Reboot läuft das Medium an der gespeicherten Stelle weiter.
+Von einem anderen Rechner aus `rsync` über SSH (`media-sync`-User) befüllt `/mnt/hoermond`. Der inotify-Watcher löst einen MPD-Rescan aus. Auf dem Touchscreen erscheint eine **provisorische Liste** der erkannten Medien (Text genügt — noch kein Cover-Grid). Tap auf einen Eintrag startet die Wiedergabe über die 3,5-mm-Klinke. Wiedergabeposition wird alle 10 s gespeichert; nach Stecker-Ziehen und Reboot läuft das Medium an der gespeicherten Stelle weiter.
 
 ### Akzeptanzkriterien (manuell testbar)
-- [ ] `rsync -avz --partial media/ media-sync@<pi-ip>:/media/` überträgt Dateien; `media-sync` ist auf `/media` per chroot beschränkt und hat **keine** Shell/kein Passwort (nur Key-Auth).
+- [ ] `rsync -avz --partial media/ media-sync@<pi-ip>:/mnt/hoermond/` überträgt Dateien; `media-sync` ist auf `/mnt/hoermond` per chroot beschränkt und hat **keine** Shell/kein Passwort (nur Key-Auth).
 - [ ] Nach abgeschlossenem Sync erscheint neuer Inhalt automatisch (inotify → MPD-Rescan), ohne manuellen Eingriff, innerhalb < 30 s.
 - [ ] Provisorische Liste auf dem Display zeigt Hörbücher (`audiobooks/`) und Musik (`music/`) getrennt.
 - [ ] Tap auf einen Eintrag startet hörbare Wiedergabe über Klinke.
@@ -103,8 +103,8 @@ Von einem anderen Rechner aus `rsync` über SSH (`media-sync`-User) befüllt `/m
 ### Entwickler-Tasks
 
 **System**
-- SSH-User `media-sync`: Key-Auth-only, `ChrootDirectory` auf `/media`, kein interaktiver Login (`ForceCommand internal-sftp`/rsync-restriction). **(M)**
-- `media-watcher.service`: inotify auf `/media`, debounced Trigger eines MPD-Rescans nach Sync-Abschluss; jeder Vorgang schreibt einen Eintrag ins Sync-Log. **(M)**
+- SSH-User `media-sync`: Key-Auth-only, `ChrootDirectory` auf `/mnt/hoermond`, kein interaktiver Login (`ForceCommand internal-sftp`/rsync-restriction). **(M)**
+- `media-watcher.service`: inotify auf `/mnt/hoermond`, debounced Trigger eines MPD-Rescans nach Sync-Abschluss; jeder Vorgang schreibt einen Eintrag ins Sync-Log. **(M)**
 - Verzeichnis-/Rechtekonzept `audiobooks/` und `music/` festlegen. **(S)**
 
 **Backend (Electron-Main)**
@@ -334,7 +334,7 @@ Während Wiedergabe bleibt das Display an; bei Pause/Stop schaltet es nach 5 min
 - [ ] S8 Schlaf-Timer: 15/30/60 min + „Bis Ende des Kapitels" wählbar; Countdown sichtbar; Tap auf Countdown bricht ab.
 - [ ] 60 s vor Timer-Ende lineares Fade-Out der Lautstärke; nach Ablauf Pause (kein Stop → Resume bleibt möglich) (E10).
 - [ ] „Bis Ende des Kapitels" bei kapitellosem Medium mappt auf Track-Ende (E12).
-- [ ] Medium ohne lokales Cover: Online-Fetch (MusicBrainz/Last.fm) lädt Cover nach, gecacht unter `/media/.cache/covers/`; bis dahin Shimmer; bei Fehlschlag dauerhaft Platzhalter (Initial + deterministische Farbe), keine Fehlermeldung ans Kind (E2/E3).
+- [ ] Medium ohne lokales Cover: Online-Fetch (MusicBrainz/Last.fm) lädt Cover nach, gecacht unter `/mnt/hoermond/.cache/covers/`; bis dahin Shimmer; bei Fehlschlag dauerhaft Platzhalter (Initial + deterministische Farbe), keine Fehlermeldung ans Kind (E2/E3).
 - [ ] Sync-Icon zeigt ✅ aktuell / 🔄 läuft (animiert 360°/1,4 s) / ⚠️ fehlgeschlagen (Amber); Tap auf ⚠️ zeigt Details (E7/E8).
 - [ ] Sync-Log der letzten 10 Vorgänge in S10 einsehbar.
 - [ ] **E2E-Stromverlust-Test:** während Wiedergabe Stecker ziehen → Reboot → Auto-Resume an korrekter Position (≤ 10 s), Bibliothek intakt, kein Datenverlust (mind. 10× wiederholt).
@@ -346,7 +346,7 @@ Während Wiedergabe bleibt das Display an; bei Pause/Stop schaltet es nach 5 min
 
 **Backend (Electron-Main)**
 - Schlaf-Timer-Logik: Modi 15/30/60/„bis Kapitelende" (→ Track-Ende bei E12), 60-s-Fade-Out (linear, präzises Volume-Ramping), Pause am Ende; Countdown-Events an Renderer. **(M)**
-- Cover-Pipeline: lokales Cover (cover.jpg/folder.jpg/embedded) → sonst Online-Fetch (MusicBrainz Cover Art Archive / Last.fm) → Cache `/media/.cache/covers/`; Fetch-Status-Events (für Shimmer). **(L)**
+- Cover-Pipeline: lokales Cover (cover.jpg/folder.jpg/embedded) → sonst Online-Fetch (MusicBrainz Cover Art Archive / Last.fm) → Cache `/mnt/hoermond/.cache/covers/`; Fetch-Status-Events (für Shimmer). **(L)**
 - Sync-Status-Aggregation: ✅/🔄/⚠️ aus den M2-Sync-Events ableiten; Sync-Log-Abruf (letzte 10). **(S)**
 
 **Frontend**
@@ -368,7 +368,7 @@ Während Wiedergabe bleibt das Display an; bei Pause/Stop schaltet es nach 5 min
 ### Technische Risiken & Spikes
 - **Touch-Wake ohne UI-Reaktion (E6):** Technisch knifflig — der erste Touch nach DPMS-Off darf das Display wecken, aber nicht an den Renderer als Tap durchgereicht werden. **Spike:** Event-Pfad X11/libinput → Electron klären; ggf. „Swallow"-Logik im Main-Prozess oder kurzer Input-Block nach Wake.
 - **Fade-Out-Präzision:** Volume-Ramping über MPD/PipeWire muss linear und ruckelfrei sein; „60 s vor Ende" erfordert verlässliche Restzeit (bei Streams/CUE prüfen).
-- **Online-Cover-Fetch:** Gerät kann offline sein → Fetch muss timeouten und sauber auf Platzhalter zurückfallen, Cache darf read-only-rootfs nicht verletzen (Cache liegt auf `/media`, beschreibbar — verifizieren).
+- **Online-Cover-Fetch:** Gerät kann offline sein → Fetch muss timeouten und sauber auf Platzhalter zurückfallen, Cache darf read-only-rootfs nicht verletzen (Cache liegt auf `/mnt/hoermond`, beschreibbar — verifizieren).
 - **E2E-Stromverlust:** abschließende Härtung; bei Fehlern liegt die Ursache fast immer in M1 (overlayfs/Schreibpfade) oder M2 (WAL/Positionsschreiben) — entsprechend früh mitvalidieren.
 
 ---

@@ -160,6 +160,12 @@ Nicht sehen: `login:`-Prompt, der auf manuelle Eingabe wartet.
 **Abhängigkeiten:** T1.01
 **Vorbedingung:** Pi bootet, SSH-Zugang, freier Speicher auf der SD.
 
+> **Überholt:** Bei der tatsächlichen Durchführung stellte sich heraus, dass eine eigene
+> Partition auf `/media` einen systemd-Abhängigkeitszyklus erzeugt (`overlayroot=tmpfs`
+> reserviert `/media/root-ro`/`root-rw` intern) und den Pi unbootbar macht. Der reale
+> Mountpoint ist `/mnt/hoermond` — siehe `m1-pi-setup.md` Schritt 2, das dieses Kapitel
+> ersetzt. Dieser Abschnitt bleibt nur als historischer Plan stehen.
+
 **Ziel:** Eine separate ext4-Partition `/media` mit `noatime,nodiratime`, plus ein schreibbares Verzeichnis `/var/lib/mediaplayer` — beide bleiben unter overlayfs (T1.16) schreibbar.
 
 **Beschreibung:**

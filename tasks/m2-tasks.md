@@ -122,15 +122,15 @@ INTEGRATION & HÄRTUNG (auf dem Pi)
 
 ### T2.01 — Verzeichnis- & Rechtekonzept `audiobooks/`, `music/`, `.state`
 **Größe:** S
-**Abhängigkeiten:** keine (setzt M1-`/media`-Partition voraus)
-**Vorbedingung:** Pi läuft, `/media` ist die separate ext4-Partition (M1 T1.02), `/var/lib/mediaplayer` ist bind-mount auf `/media/.state` (M1 T1.07/ADR-2). SSH-Zugang als `player`.
+**Abhängigkeiten:** keine (setzt M1-`/mnt/hoermond`-Partition voraus)
+**Vorbedingung:** Pi läuft, `/mnt/hoermond` ist die separate ext4-Partition (M1 T1.02), `/var/lib/mediaplayer` ist bind-mount auf `/mnt/hoermond/.state` (M1 T1.07/ADR-2). SSH-Zugang als `player`.
 
-**Ziel:** Eine klar definierte Verzeichnisstruktur unter `/media` mit korrekten Besitz-/Rechtebits, sodass (a) der spätere `media-sync`-User per chroot schreiben darf, (b) MPD und Electron lesen dürfen, (c) interner State (`.state`) und Medien sauber getrennt sind.
+**Ziel:** Eine klar definierte Verzeichnisstruktur unter `/mnt/hoermond` mit korrekten Besitz-/Rechtebits, sodass (a) der spätere `media-sync`-User per chroot schreiben darf, (b) MPD und Electron lesen dürfen, (c) interner State (`.state`) und Medien sauber getrennt sind.
 
 **Beschreibung:**
 1. Auf dem Pi die Zielverzeichnisse anlegen (falls aus M1 noch leer/fehlend):
    ```bash
-   sudo mkdir -p /media/audiobooks /media/music /media/.state /media/.covers
+   sudo mkdir -p /mnt/hoermond/audiobooks /mnt/hoermond/music /mnt/hoermond/.state /mnt/hoermond/.covers
    ```
    - `audiobooks/` und `music/` sind die zwei Medien-Wurzeln (M2 trennt die Liste danach).
    - `.state/` ist das bind-mount-Ziel für `/var/lib/mediaplayer` (SQLite, MPD-DB) — schon aus M1 vorhanden.
@@ -143,38 +143,38 @@ INTEGRATION & HÄRTUNG (auf dem Pi)
    ```
 3. Besitz und Rechte setzen. Medien-Wurzeln gehören `player:media`, sind gruppen-beschreibbar und setgid (damit neue Dateien die Gruppe `media` erben):
    ```bash
-   sudo chown -R player:media /media/audiobooks /media/music /media/.covers
-   sudo chmod -R 2775 /media/audiobooks /media/music /media/.covers   # rwxrwsr-x
+   sudo chown -R player:media /mnt/hoermond/audiobooks /mnt/hoermond/music /mnt/hoermond/.covers
+   sudo chmod -R 2775 /mnt/hoermond/audiobooks /mnt/hoermond/music /mnt/hoermond/.covers   # rwxrwsr-x
    # .state bleibt restriktiv (nur player), enthält keine Sync-Ziele:
-   sudo chown -R player:player /media/.state
-   sudo chmod 700 /media/.state
+   sudo chown -R player:player /mnt/hoermond/.state
+   sudo chmod 700 /mnt/hoermond/.state
    ```
 4. Konvention dokumentieren (als Kommentar-Datei, dient später Sync-Skripten als Referenz):
    ```bash
-   sudo tee /media/README.sync >/dev/null <<'EOF'
+   sudo tee /mnt/hoermond/README.sync >/dev/null <<'EOF'
    # Hörmond Medien-Layout (M2)
    # audiobooks/<Autor>/<Titel>/...   -> type=audiobook
    # music/<Künstler>/<Album>/...     -> type=music
    # .state/   -> interner SQLite/MPD-State (NICHT syncen)
    # .covers/  -> Cover-Cache (beets/M7)
-   # rsync-Ziel des media-sync-Users ist /media (chroot-Wurzel, siehe T2.02).
+   # rsync-Ziel des media-sync-Users ist /mnt/hoermond (chroot-Wurzel, siehe T2.02).
    EOF
    ```
 
 **Caveats:**
 - Das setgid-Bit (`2` vor `775`) ist wichtig: ohne es erhalten per rsync neu angelegte Unterordner die Primärgruppe des schreibenden Users statt `media`, und MPD könnte sie nicht lesen.
-- `/media/.state` darf **nicht** in die chroot-beschreibbare Zone fallen — der `media-sync`-User soll internen State nicht überschreiben können. Da chroot-Wurzel `/media` ist (T2.02), liegt `.state` zwar *innerhalb* der chroot, ist aber nur für `player` (Mode 700) schreibbar — der `media-sync`-User kommt nicht heran.
+- `/mnt/hoermond/.state` darf **nicht** in die chroot-beschreibbare Zone fallen — der `media-sync`-User soll internen State nicht überschreiben können. Da chroot-Wurzel `/mnt/hoermond` ist (T2.02), liegt `.state` zwar *innerhalb* der chroot, ist aber nur für `player` (Mode 700) schreibbar — der `media-sync`-User kommt nicht heran.
 - `mpd`-User existiert nur, wenn das Distro-Paket ihn anlegt (M1 nutzt `user "player"` in `mpd.conf`, MPD läuft also als `player`). Dann ist Schritt 2 für `mpd` unnötig — `|| true` fängt das ab.
 
 **Dateien/Artefakte:**
-- Erstellt: `/media/audiobooks`, `/media/music`, `/media/.covers`, `/media/README.sync`, Gruppe `media`
+- Erstellt: `/mnt/hoermond/audiobooks`, `/mnt/hoermond/music`, `/mnt/hoermond/.covers`, `/mnt/hoermond/README.sync`, Gruppe `media`
 - Verändert: Gruppenmitgliedschaft `player`
 
 **Verifikation:**
 ```bash
-ls -lan /media                    # audiobooks/music: Mode 2775, Gruppe = media-GID
-stat -c '%A %U:%G' /media/audiobooks   # erwartet: drwxrwsr-x player:media
-stat -c '%A %U:%G' /media/.state       # erwartet: drwx------ player:player
+ls -lan /mnt/hoermond                    # audiobooks/music: Mode 2775, Gruppe = media-GID
+stat -c '%A %U:%G' /mnt/hoermond/audiobooks   # erwartet: drwxrwsr-x player:media
+stat -c '%A %U:%G' /mnt/hoermond/.state       # erwartet: drwx------ player:player
 id player | grep -q media && echo "player in media-Gruppe OK"
 ```
 Sehen: setgid-Bit (`s`) auf `audiobooks`/`music`, `.state` nur für `player`.
@@ -187,7 +187,7 @@ Nicht sehen: world-writable Verzeichnisse (`o+w`), `.state` für andere lesbar.
 **Abhängigkeiten:** T2.01
 **Vorbedingung:** Verzeichnisstruktur und `media`-Gruppe existieren (T2.01). SSH-Server (`openssh-server`) läuft (aus M1). Du hast den **öffentlichen** SSH-Key des Sync-Quellrechners (Laptop) zur Hand.
 
-**Ziel:** Ein dedizierter SSH-User `media-sync`, der **ausschließlich** per Public-Key zu `/media` synchronisieren kann: kein Passwort, keine interaktive Shell, `ChrootDirectory` auf `/media`, eingeschränkt auf rsync (bzw. internal-sftp). Ein interaktiver Login-Versuch wird abgewiesen.
+**Ziel:** Ein dedizierter SSH-User `media-sync`, der **ausschließlich** per Public-Key zu `/mnt/hoermond` synchronisieren kann: kein Passwort, keine interaktive Shell, `ChrootDirectory` auf `/mnt/hoermond`, eingeschränkt auf rsync (bzw. internal-sftp). Ein interaktiver Login-Versuch wird abgewiesen.
 
 **Beschreibung:**
 > 🔒 **Sicherheitskritisch.** Ein falsches Ownership der chroot-Wurzel macht entweder den Login unmöglich („broken pipe") oder hebelt die Beschränkung aus. Vor Abnahme: Security-Review (T2.04).
@@ -197,10 +197,10 @@ Nicht sehen: world-writable Verzeichnisse (`o+w`), `.state` für andere lesbar.
    sudo useradd --system --no-create-home --shell /usr/sbin/nologin --groups media media-sync
    sudo passwd -l media-sync     # Passwort-Login hart sperren
    ```
-2. **chroot-Anforderung an die Wurzel:** sshd verlangt, dass die `ChrootDirectory` und **alle** übergeordneten Pfade `root:root` gehören und **nicht** gruppen-/world-writable sind. `/media` selbst muss also `root:root 0755` sein:
+2. **chroot-Anforderung an die Wurzel:** sshd verlangt, dass die `ChrootDirectory` und **alle** übergeordneten Pfade `root:root` gehören und **nicht** gruppen-/world-writable sind. `/mnt/hoermond` selbst muss also `root:root 0755` sein:
    ```bash
-   sudo chown root:root /media
-   sudo chmod 755 /media
+   sudo chown root:root /mnt/hoermond
+   sudo chmod 755 /mnt/hoermond
    ```
    Die *Unterverzeichnisse* `audiobooks/` und `music/` bleiben `player:media 2775` (aus T2.01) und sind damit für `media-sync` (Mitglied der `media`-Gruppe) beschreibbar. Genau das ist die gewünschte Asymmetrie: chroot-Wurzel unschreibbar, Medien-Unterordner schreibbar.
 3. Das SSH-Verzeichnis für den Key **außerhalb** der chroot ablegen (innerhalb der chroot kann sshd den Key nicht lesen, bevor der User „drin" ist — Standard-Muster ist ein root-eigenes Key-Verzeichnis):
@@ -223,7 +223,7 @@ Nicht sehen: world-writable Verzeichnisse (`o+w`), `.state` für andere lesbar.
        KbdInteractiveAuthentication no
        PubkeyAuthentication yes
        # chroot auf die Medien-Partition:
-       ChrootDirectory /media
+       ChrootDirectory /mnt/hoermond
        # Kein TCP-/Agent-/X11-Forwarding, kein Tunnel:
        AllowTcpForwarding no
        AllowAgentForwarding no
@@ -253,19 +253,19 @@ Nicht sehen: world-writable Verzeichnisse (`o+w`), `.state` für andere lesbar.
    sudo chmod 755 /usr/local/sbin/media-sync-shell
    sudo chown root:root /usr/local/sbin/media-sync-shell
    ```
-   **rsync in der chroot:** Da der serverseitige `rsync`-Aufruf *innerhalb* der chroot (`/media`) ausgeführt wird, muss das `rsync`-Binary und seine Bibliotheken in der chroot verfügbar sein. Es gibt zwei robuste Optionen:
+   **rsync in der chroot:** Da der serverseitige `rsync`-Aufruf *innerhalb* der chroot (`/mnt/hoermond`) ausgeführt wird, muss das `rsync`-Binary und seine Bibliotheken in der chroot verfügbar sein. Es gibt zwei robuste Optionen:
    - **Option A (einfach, empfohlen):** Statt rsync-over-shell den **`internal-sftp`**-Server nutzen (in sshd eingebaut, braucht keine chroot-Binaries) und auf dem Laptop mit `rsync -e ssh --rsync-path=...` zu arbeiten ist dann nicht möglich — daher synct der Laptop in diesem Fall via `sftp`/`rclone`. Für reines rsync ist Option B nötig.
    - **Option B (rsync in chroot):** rsync-Binary + Abhängigkeiten in die chroot kopieren:
      ```bash
-     sudo mkdir -p /media/usr/bin /media/bin /media/lib /media/lib/aarch64-linux-gnu
-     sudo cp /usr/bin/rsync /media/usr/bin/
+     sudo mkdir -p /mnt/hoermond/usr/bin /mnt/hoermond/bin /mnt/hoermond/lib /mnt/hoermond/lib/aarch64-linux-gnu
+     sudo cp /usr/bin/rsync /mnt/hoermond/usr/bin/
      # Abhängige Libs ermitteln und kopieren:
      for lib in $(ldd /usr/bin/rsync | awk '{print $3}' | grep '^/'); do
-       sudo mkdir -p "/media$(dirname "$lib")"
-       sudo cp "$lib" "/media$lib"
+       sudo mkdir -p "/mnt/hoermond$(dirname "$lib")"
+       sudo cp "$lib" "/mnt/hoermond$lib"
      done
      # Loader (ld-linux) ebenfalls:
-     sudo cp /lib/ld-linux-aarch64.so.1 /media/lib/ 2>/dev/null || true
+     sudo cp /lib/ld-linux-aarch64.so.1 /mnt/hoermond/lib/ 2>/dev/null || true
      ```
      Da das Layout fragil ist, ist **Option A der bevorzugte Default** für M2; nur wenn das Akzeptanzkriterium explizit `rsync` über SSH verlangt (tut es), nutze Option B und dokumentiere die kopierten Pfade. *Empfehlung: Option B wählen, weil das AK wörtlich `rsync` fordert.*
 6. sshd-Konfiguration testen und neu laden:
@@ -275,30 +275,30 @@ Nicht sehen: world-writable Verzeichnisse (`o+w`), `.state` für andere lesbar.
    ```
 
 **Caveats:**
-- `ChrootDirectory /media` schlägt fehl, wenn `/media` **nicht** `root:root` und nicht `0755` ist — sshd loggt dann „bad ownership or modes for chroot directory". Genau deshalb gehört in T2.01 die Wurzel `root`, die Unterordner aber `player:media`.
+- `ChrootDirectory /mnt/hoermond` schlägt fehl, wenn `/mnt/hoermond` **nicht** `root:root` und nicht `0755` ist — sshd loggt dann „bad ownership or modes for chroot directory". Genau deshalb gehört in T2.01 die Wurzel `root`, die Unterordner aber `player:media`.
 - Wird Option B gewählt und ein Library-Update auf dem Pi gemacht (rsync aktualisiert), kann das in chroot kopierte `rsync` veralten — bei Bookworm-Upgrades neu kopieren. In `README.sync` vermerken.
 - `PermitTTY no` + `ForceCommand` zusammen verhindern jede interaktive Shell. Ein `ssh media-sync@pi` (ohne rsync) landet im Wrapper-`else`-Zweig und wird mit Exit 1 abgewiesen.
 - `passwd -l` allein reicht nicht — `PasswordAuthentication no` im Match-Block ist die eigentliche Absicherung; beides kombinieren (Defense in Depth).
 - Der private Key bleibt **nur** auf dem Laptop. Niemals den privaten Key auf den Pi legen.
 
 **Dateien/Artefakte:**
-- Erstellt: User `media-sync`, `/etc/ssh/sshd_config.d/10-media-sync.conf`, `/etc/ssh/authorized_keys.d/media-sync`, `/usr/local/sbin/media-sync-shell`, ggf. chroot-rsync unter `/media/usr/bin` (Option B)
-- Verändert: Gruppenmitgliedschaft, `/media`-Ownership (root)
+- Erstellt: User `media-sync`, `/etc/ssh/sshd_config.d/10-media-sync.conf`, `/etc/ssh/authorized_keys.d/media-sync`, `/usr/local/sbin/media-sync-shell`, ggf. chroot-rsync unter `/mnt/hoermond/usr/bin` (Option B)
+- Verändert: Gruppenmitgliedschaft, `/mnt/hoermond`-Ownership (root)
 
 **Verifikation:**
 ```bash
 # Vom Laptop aus — erfolgreicher Sync (Testdatei):
 mkdir -p /tmp/sync-test/audiobooks/TestAutor/TestBuch
 echo dummy > /tmp/sync-test/audiobooks/TestAutor/TestBuch/01.mp3
-rsync -avz /tmp/sync-test/ media-sync@<pi-ip>:/      # Ziel ist chroot-Wurzel = /media
-# erwartet: Übertragung ohne Passwortabfrage, Datei landet in /media/audiobooks/...
+rsync -avz /tmp/sync-test/ media-sync@<pi-ip>:/      # Ziel ist chroot-Wurzel = /mnt/hoermond
+# erwartet: Übertragung ohne Passwortabfrage, Datei landet in /mnt/hoermond/audiobooks/...
 
 # Interaktiver Login MUSS scheitern:
 ssh media-sync@<pi-ip>                                # erwartet: "Nur rsync ist erlaubt", Exit 1
 ssh media-sync@<pi-ip> 'cat /etc/passwd'              # erwartet: abgewiesen (Exit 1)
 
 # Auf dem Pi — Datei angekommen + Rechte korrekt:
-ls -l /media/audiobooks/TestAutor/TestBuch/          # 01.mp3 vorhanden, Gruppe media
+ls -l /mnt/hoermond/audiobooks/TestAutor/TestBuch/          # 01.mp3 vorhanden, Gruppe media
 sudo journalctl -u ssh --since '5 min ago' | grep media-sync
 ```
 Sehen: rsync überträgt ohne Passwort; jeder Nicht-rsync-Befehl wird abgewiesen.
@@ -309,9 +309,9 @@ Nicht sehen: Passwortabfrage, funktionierende Shell, „bad ownership"-Fehler im
 ### T2.03 — `media-watcher.service`: inotify, debounced Rescan, Sync-Log
 **Größe:** M
 **Abhängigkeiten:** T2.01 (Verzeichnisse), profitiert von T2.02 (echter Sync zum Testen)
-**Vorbedingung:** `/media/audiobooks` und `/media/music` existieren; MPD läuft und `mpc update` funktioniert auf dem Pi.
+**Vorbedingung:** `/mnt/hoermond/audiobooks` und `/mnt/hoermond/music` existieren; MPD läuft und `mpc update` funktioniert auf dem Pi.
 
-**Ziel:** Ein systemd-Dienst, der `/media` rekursiv mit inotify überwacht, einen Schwall von rsync-Events **debounced** (auf das Sync-Ende wartet), dann **einmal** `mpc update` (MPD-Rescan) auslöst und jeden Vorgang in ein **Sync-Log** schreibt, das später (M7) für das Sync-Icon ausgewertet wird.
+**Ziel:** Ein systemd-Dienst, der `/mnt/hoermond` rekursiv mit inotify überwacht, einen Schwall von rsync-Events **debounced** (auf das Sync-Ende wartet), dann **einmal** `mpc update` (MPD-Rescan) auslöst und jeden Vorgang in ein **Sync-Log** schreibt, das später (M7) für das Sync-Icon ausgewertet wird.
 
 **Beschreibung:**
 1. Werkzeuge installieren:
@@ -331,7 +331,7 @@ Nicht sehen: Passwortabfrage, funktionierende Shell, „bad ownership"-Fehler im
    #!/bin/bash
    set -euo pipefail
 
-   MEDIA_DIR="/media"
+   MEDIA_DIR="/mnt/hoermond"
    LOG="/var/lib/mediaplayer/sync/sync.log"
    DEBOUNCE_SECS=8        # Ruhe-Fenster nach letztem Event, bevor Rescan startet
    WATCH_EXCLUDE='(/\.state/|/\.covers/|/\.sync-tmp|README\.sync)'
@@ -420,10 +420,19 @@ Nicht sehen: Passwortabfrage, funktionierende Shell, „bad ownership"-Fehler im
    sudo sysctl --system
    ```
 
+**Praxis-Korrektur (2026-06-16):** `rsync -a` (Client) enthält `-p` und überträgt
+Quell-Rechte 1:1 — auf Client-Flags allein ist kein Verlass. Verlässlich ist nur ein
+**serverseitiger** Fix: `/usr/local/sbin/media-fix-perms.sh` (root, beschränkt auf
+`audiobooks/` und `music/` — niemals rekursiv über die ganze `/mnt/hoermond`-Partition,
+sonst werden die Chroot-Jail-Binaries aus T2.02 mit-chmodet und der SSH-Login bricht mit
+„Broken pipe"), aufgerufen über einen eng begrenzten `sudoers`-Eintrag für `player`.
+Einzuhängen direkt nach dem Debounce-Trigger, **vor** `mpc --wait update` (Schritt 3
+oben). Vollständiges Skript + `sudoers`-Eintrag: `tasks/m2-server-side-perm-fix.md`.
+
 **Caveats:**
 - **`mpc --wait update`** blockiert bis der Rescan fertig ist — dadurch loggt `completed` erst nach echtem Abschluss. Ohne `--wait` würde `completed` zu früh geschrieben.
 - Debounce-Fenster (`DEBOUNCE_SECS=8`) muss kürzer als das 30-s-AK sein, aber lang genug, dass eine kurze rsync-Pause (z. B. zwischen Dateien) keinen verfrühten Rescan auslöst. 8 s ist ein guter Startwert; bei sehr langsamen Netzen ggf. erhöhen — aber Summe (Debounce + Rescan-Dauer) muss < 30 s bleiben.
-- inotify sieht **keine** Events von rsync, das in die chroot schreibt? Doch — die chroot ändert nur den Pfad-Namespace des sshd-Kindprozesses; die echten Inodes unter `/media` werden modifiziert und der (nicht-chrootete) Watcher sieht sie normal.
+- inotify sieht **keine** Events von rsync, das in die chroot schreibt? Doch — die chroot ändert nur den Pfad-Namespace des sshd-Kindprozesses; die echten Inodes unter `/mnt/hoermond` werden modifiziert und der (nicht-chrootete) Watcher sieht sie normal.
 - Das `--exclude` muss `.state` und `.covers` ausschließen, sonst lösen SQLite-WAL-Schreibvorgänge (alle 10 s, T2.13!) eine Endlosschleife aus Rescans aus. **Kritischer Fallstrick.**
 - `inotifywait -r` auf einem riesigen Baum kann beim Start dauern und Watches verbrauchen — daher das sysctl-Limit (Schritt 5).
 
@@ -434,7 +443,7 @@ Nicht sehen: Passwortabfrage, funktionierende Shell, „bad ownership"-Fehler im
 ```bash
 systemctl status media-watcher.service          # active (running)
 # Sync auslösen (vom Laptop, T2.02) oder lokal eine Datei kopieren:
-cp /pfad/zu/test.mp3 /media/music/TestAlbum/01.mp3   # ggf. Ordner anlegen
+cp /pfad/zu/test.mp3 /mnt/hoermond/music/TestAlbum/01.mp3   # ggf. Ordner anlegen
 # innerhalb < 30 s:
 tail -f /var/lib/mediaplayer/sync/sync.log
 # erwartet: eine "started"-Zeile, kurz darauf eine "completed"-Zeile
@@ -454,12 +463,12 @@ Nicht sehen: Rescan-Sturm (viele `completed` in Folge), Endlos-Rescan durch `.st
 
 **Beschreibung:**
 Diese Checkliste abarbeiten und das Ergebnis in `tasks/m2-security-review.md` festhalten (Datum, geprüft von, Befund je Punkt):
-1. **chroot-Ausbruch:** Kann `media-sync` außerhalb `/media` schreiben/lesen?
+1. **chroot-Ausbruch:** Kann `media-sync` außerhalb `/mnt/hoermond` schreiben/lesen?
    ```bash
-   rsync -avz /tmp/x media-sync@<pi-ip>:/../etc/    # MUSS scheitern / in /media bleiben
+   rsync -avz /tmp/x media-sync@<pi-ip>:/../etc/    # MUSS scheitern / in /mnt/hoermond bleiben
    ssh media-sync@<pi-ip> 'ls /'                    # MUSS abgewiesen werden (ForceCommand)
    ```
-2. **Wurzel-Ownership:** `stat -c '%U:%G %a' /media` → `root:root 755`. (sonst chroot unsicher/kaputt)
+2. **Wurzel-Ownership:** `stat -c '%U:%G %a' /mnt/hoermond` → `root:root 755`. (sonst chroot unsicher/kaputt)
 3. **Key-only:** `PasswordAuthentication no` greift — Login mit falschem Key wird ohne Passwort-Prompt abgewiesen:
    ```bash
    ssh -o PreferredAuthentications=password media-sync@<pi-ip>   # MUSS sofort scheitern
@@ -469,7 +478,7 @@ Diese Checkliste abarbeiten und das Ergebnis in `tasks/m2-security-review.md` fe
    sudo -l -U media-sync 2>&1 | grep -i 'not allowed\|may not'   # keine sudo-Rechte
    groups media-sync
    ```
-5. **State-Schutz:** `media-sync` kann `/media/.state` (SQLite) nicht überschreiben:
+5. **State-Schutz:** `media-sync` kann `/mnt/hoermond/.state` (SQLite) nicht überschreiben:
    ```bash
    rsync -avz /tmp/evil media-sync@<pi-ip>:/.state/   # MUSS scheitern (Mode 700, fremder Owner)
    ```
@@ -477,7 +486,7 @@ Diese Checkliste abarbeiten und das Ergebnis in `tasks/m2-security-review.md` fe
 7. **Wrapper-Robustheit:** `media-sync-shell` lässt nur `rsync --server` durch; kein `rsync --server ... ; rm -rf` o. Ä. (Wrapper nutzt `case`-Glob, kein `eval` mit Shell-Injection).
 
 **Caveats:**
-- Punkt 1 ist der wichtigste: ein falsches chroot-Ownership lässt den Login zwar funktionieren, aber sshd verweigert die chroot — testen, dass der Sync wirklich *in* `/media` landet und nicht etwa in `/home/media-sync`.
+- Punkt 1 ist der wichtigste: ein falsches chroot-Ownership lässt den Login zwar funktionieren, aber sshd verweigert die chroot — testen, dass der Sync wirklich *in* `/mnt/hoermond` landet und nicht etwa in `/home/media-sync`.
 - Review-Ergebnis ist Abnahme-relevant (siehe milestones.md §Sicherheits-Checkpoints).
 
 **Dateien/Artefakte:**
@@ -485,16 +494,16 @@ Diese Checkliste abarbeiten und das Ergebnis in `tasks/m2-security-review.md` fe
 
 **Verifikation:** Alle 7 Punkte „bestanden"; Protokoll committet.
 Sehen: dokumentierte Befunde, alle „MUSS scheitern"-Tests scheitern wirklich.
-Nicht sehen: erfolgreichen Zugriff außerhalb `/media`, Passwort-Login, sudo-Rechte.
+Nicht sehen: erfolgreichen Zugriff außerhalb `/mnt/hoermond`, Passwort-Login, sudo-Rechte.
 
 ---
 
 ### T2.05 — beets-Konfiguration für Metadaten-Anreicherung
 **Größe:** M
 **Abhängigkeiten:** T2.01
-**Vorbedingung:** `/media/audiobooks`, `/media/music`, `/media/.covers` existieren; Python3 verfügbar (Bookworm-Default).
+**Vorbedingung:** `/mnt/hoermond/audiobooks`, `/mnt/hoermond/music`, `/mnt/hoermond/.covers` existieren; Python3 verfügbar (Bookworm-Default).
 
-**Ziel:** beets ist installiert und so konfiguriert, dass es Metadaten (Titel, Künstler/Autor, Album, Dauer) anreichert und Cover in den Cache (`/media/.covers`) legen kann — **ohne** Dateien zu verschieben oder zu zerstören. Cover-Fetch wird in M7 final geschärft; M2 legt nur die Pipeline an.
+**Ziel:** beets ist installiert und so konfiguriert, dass es Metadaten (Titel, Künstler/Autor, Album, Dauer) anreichert und Cover in den Cache (`/mnt/hoermond/.covers`) legen kann — **ohne** Dateien zu verschieben oder zu zerstören. Cover-Fetch wird in M7 final geschärft; M2 legt nur die Pipeline an.
 
 **Beschreibung:**
 1. beets installieren (System-Python; Bookworm braucht ggf. `--break-system-packages` oder ein venv — venv ist sauberer):
@@ -508,7 +517,7 @@ Nicht sehen: erfolgreichen Zugriff außerhalb `/media`, Passwort-Login, sudo-Rec
    ```bash
    sudo -u player mkdir -p /home/player/.config/beets
    sudo -u player tee /home/player/.config/beets/config.yaml >/dev/null <<'EOF'
-   directory: /media
+   directory: /mnt/hoermond
    library: /var/lib/mediaplayer/beets/library.db
 
    # NIEMALS Originaldateien verschieben/umbenennen/löschen — nur lesen + Tags lesen.
@@ -540,7 +549,7 @@ Nicht sehen: erfolgreichen Zugriff außerhalb `/media`, Passwort-Login, sudo-Rec
    #!/bin/sh
    # Nicht-destruktive Metadaten-Anreicherung. Wird nach MPD-Rescan aufgerufen.
    # -q quiet, -A keine Autotag-Rückfragen (alles automatisch übernehmen).
-   exec /usr/local/bin/beet import -q -A /media/audiobooks /media/music
+   exec /usr/local/bin/beet import -q -A /mnt/hoermond/audiobooks /mnt/hoermond/music
    EOF
    sudo chmod 755 /usr/local/sbin/media-enrich.sh
    sudo chown root:root /usr/local/sbin/media-enrich.sh
@@ -563,7 +572,7 @@ beet version                                   # beets meldet Version
 /usr/local/sbin/media-enrich.sh
 beet ls                                         # zeigt erkannte Tracks mit Titel/Artist
 beet ls -f '$title — $artist — $length'         # Dauer/Felder vorhanden
-ls -la /media/audiobooks /media/music           # KEINE verschobenen/umbenannten Dateien
+ls -la /mnt/hoermond/audiobooks /mnt/hoermond/music           # KEINE verschobenen/umbenannten Dateien
 ```
 Sehen: beets erkennt Titel/Artist/Länge; Originaldateien unverändert an Ort und Stelle.
 Nicht sehen: verschobene/umbenannte Mediendateien, geänderte mtimes der Originale.
@@ -583,7 +592,7 @@ Nicht sehen: verschobene/umbenannte Mediendateien, geänderte mtimes der Origina
    ```typescript
    /** Ein Medien-Eintrag für Liste/Grid. type unterscheidet Hörbuch vs. Musik. */
    export interface MediaItem {
-     /** Relativer Pfad in /media, z. B. "audiobooks/Autor/Titel". Stabiler Schlüssel. */
+     /** Relativer Pfad in /mnt/hoermond, z. B. "audiobooks/Autor/Titel". Stabiler Schlüssel. */
      path: string;
      type: 'audiobook' | 'music';
      title: string;
@@ -611,7 +620,7 @@ Nicht sehen: verschobene/umbenannte Mediendateien, geänderte mtimes der Origina
    /** Aktueller Player-Zustand (MPD ist autoritativ). */
    export interface PlayerState {
      status: 'playing' | 'paused' | 'stopped';
-     /** Pfad des aktiven Mediums (relativ zu /media) oder null. */
+     /** Pfad des aktiven Mediums (relativ zu /mnt/hoermond) oder null. */
      currentPath: string | null;
      /** Aktuelle Position in Sekunden. */
      position: number;
@@ -637,7 +646,7 @@ Nicht sehen: verschobene/umbenannte Mediendateien, geänderte mtimes der Origina
      response: { triggered: boolean };
    };
    'player:play': {
-     /** path relativ zu /media; position optional (Sekunden) für Resume/„weiter". */
+     /** path relativ zu /mnt/hoermond; position optional (Sekunden) für Resume/„weiter". */
      request: { path: string; position?: number };
      response: { ok: boolean };
    };
@@ -912,7 +921,7 @@ Nicht sehen: Compile-Fehler im Client-Modul.
 
    /**
     * Spielt ein Medium ab. MPD adressiert Dateien über den Pfad RELATIV zum
-    * music_directory (= /media). Unsere MediaItem.path-Konvention ist genau das
+    * music_directory (= /mnt/hoermond). Unsere MediaItem.path-Konvention ist genau das
     * (z. B. "audiobooks/Autor/Titel/01.mp3").
     *
     * Für ein mehrteiliges Medium (Ordner mit vielen Tracks) wird der Ordner als
@@ -996,7 +1005,7 @@ Nicht sehen: Compile-Fehler im Client-Modul.
    > Hinweis: Die IPC-Handler-Registrierung wird in T2.15 in ein eigenes Modul `app/src/main/ipc/register.ts` gebündelt, damit `index.ts` nicht überläuft. Für T2.08 reicht die direkte Registrierung; beim Refactor in T2.15 dorthin verschieben.
 
 **Caveats:**
-- MPD-Pfade sind **relativ** zum `music_directory`. Niemals absolute `/media/...`-Pfade an MPD geben — sonst „No such directory". `MediaItem.path` ist bereits relativ.
+- MPD-Pfade sind **relativ** zum `music_directory`. Niemals absolute `/mnt/hoermond/...`-Pfade an MPD geben — sonst „No such directory". `MediaItem.path` ist bereits relativ.
 - `add "<verzeichnis>"` lädt rekursiv alle Tracks des Ordners in die Queue (gut für Hörbuch-Ordner). Für eine Einzeldatei lädt es genau diese.
 - `seekcur` wirkt nur, wenn bereits etwas spielt — deshalb erst `play`, dann `seekcur` (Reihenfolge im Code beachten).
 - Fehler aus `mpd.send` (ACK) propagieren als rejected Promise → der IPC-Handler wirft → Renderer bekommt eine rejected `invoke`. In M2 reicht das; Toast-Fehlerbehandlung kommt in M6.
@@ -1174,7 +1183,7 @@ Nicht sehen: periodische Logs ohne Änderung (= verbotenes Polling), dauerhaft t
        // Tabelle cached anreichernde Metadaten (beets) + dient als FK-Ziel für
        // playback_position. path ist der relative Pfad (= MediaItem.path).
        db.exec(`CREATE TABLE media (
-         path        TEXT PRIMARY KEY,           -- relativ zu /media
+         path        TEXT PRIMARY KEY,           -- relativ zu /mnt/hoermond
          type        TEXT NOT NULL CHECK (type IN ('audiobook','music')),
          title       TEXT NOT NULL,
          artist      TEXT,
@@ -1623,7 +1632,7 @@ Nicht sehen: leere Liste trotz vorhandener MPD-Tracks (Gruppierung kaputt), Cras
 - **Nicht** bei `paused`/`stopped` periodisch schreiben — sonst sinnlose Writes und WAL-Wachstum. Nur bei `playing`.
 - Der 10-s-Tick liest den Zustand über die **Command-Verbindung** (`getState`), nicht über die idle-Verbindung — konsistent mit T2.09.
 - WAL ist aus M1 aktiv (`journal_mode = WAL`). Kein zusätzlicher `PRAGMA synchronous` nötig; Default (`NORMAL` unter WAL) ist crash-sicher genug für „≤ 10 s Toleranz".
-- **Watcher-Schleifen-Falle (siehe T2.03):** SQLite-WAL-Dateien liegen unter `/media/.state` — der inotify-Watcher MUSS `.state` ausschließen (in T2.03 erledigt), sonst lösen diese 10-s-Writes Rescans aus.
+- **Watcher-Schleifen-Falle (siehe T2.03):** SQLite-WAL-Dateien liegen unter `/mnt/hoermond/.state` — der inotify-Watcher MUSS `.state` ausschließen (in T2.03 erledigt), sonst lösen diese 10-s-Writes Rescans aus.
 - `before-quit` feuert bei sauberem Quit; beim harten Stecker-Ziehen gibt es kein Quit — genau deshalb die periodischen Writes (max. 10 s Verlust = exakt die AK-Toleranz).
 
 **Dateien/Artefakte:**
@@ -2015,7 +2024,7 @@ Nicht sehen: hartcodierte Strings, doppelte Listener (StrictMode), leere Liste t
 **Caveats:**
 - **`electron-rebuild` ist Pflicht** nach jedem `npm install` auf dem Pi — sonst „NODE_MODULE_VERSION mismatch" und die App startet nicht (Grundvertrag).
 - Audio: M1 nutzt ALSA-Default (3,5-mm-Klinke). Lautstärke prüfen (`alsamixer`), nicht gemutet. Bluetooth kommt erst in M6.
-- Wenn nach overlay-Reaktivierung die DB nicht persistiert: `/var/lib/mediaplayer` muss bind-mount auf `/media/.state` sein (M1 ADR-2) — sonst landet WAL im flüchtigen overlay-Upper. Vor dem Crash-Test (T2.18) prüfen.
+- Wenn nach overlay-Reaktivierung die DB nicht persistiert: `/var/lib/mediaplayer` muss bind-mount auf `/mnt/hoermond/.state` sein (M1 ADR-2) — sonst landet WAL im flüchtigen overlay-Upper. Vor dem Crash-Test (T2.18) prüfen.
 - `media-watcher.service` und `media-sync` sind System-Services auf rootfs — bei Overlay-aktiv unveränderlich; Änderungen daran ebenfalls nur im overlay-aus-Fenster.
 
 **Dateien/Artefakte:**
@@ -2086,7 +2095,7 @@ Nicht sehen: Resume bei 0, fsck-Reparaturen, leere DB nach Reboot, stummer Outpu
 
 | AK | Kriterium | Verifiziert in |
 |----|-----------|----------------|
-| 1 | `rsync` über SSH (`media-sync`) befüllt `/media`; chroot auf `/media`, Key-only, kein interaktiver Login | T2.02, T2.04, T2.18 |
+| 1 | `rsync` über SSH (`media-sync`) befüllt `/mnt/hoermond`; chroot auf `/mnt/hoermond`, Key-only, kein interaktiver Login | T2.02, T2.04, T2.18 |
 | 2 | Nach Sync erscheint neuer Inhalt automatisch (inotify → MPD-Rescan) < 30 s | T2.03, T2.15, T2.18 |
 | 3 | Provisorische Liste zeigt Hörbücher und Musik **getrennt** | T2.12, T2.16, T2.18 |
 | 4 | Tap auf Eintrag startet hörbare Wiedergabe über Klinke | T2.08, T2.16, T2.17, T2.18 |
