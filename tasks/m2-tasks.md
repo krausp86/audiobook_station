@@ -528,7 +528,7 @@ Nicht sehen: erfolgreichen Zugriff außerhalb `/mnt/hoermond`, Passwort-Login, s
      autotag: yes
      quiet: yes
      resume: yes
-     incremental: yes     # bereits importierte Pfade überspringen
+     duplicate_action: skip   # Duplikate über Library-Erkennung überspringen, NICHT über incremental (siehe Caveats)
 
    # Cover-Art in den Cache legen (M2: lokale eingebettete Cover bevorzugen,
    # Online-Fetch erst in M7 aktivieren).
@@ -557,6 +557,20 @@ Nicht sehen: erfolgreichen Zugriff außerhalb `/mnt/hoermond`, Passwort-Login, s
 4. (Optional, empfohlen) den Aufruf in den Watcher (T2.03) einhängen: in `media-watcher.sh` nach erfolgreichem `mpc --wait update` zusätzlich `sudo -u player /usr/local/sbin/media-enrich.sh` ausführen — aber als `player`, ohne sudo, da der Watcher schon als `player` läuft, also direkt `/usr/local/sbin/media-enrich.sh`. Diesen Aufruf erst nach `log_event "completed"` setzen, damit beets-Laufzeit den Rescan-Abschluss nicht verzögert.
 
 **Caveats:**
+- **`incremental: yes` NICHT verwenden — Praxis-Befund (2026-06-16):** beets' `incremental`
+  merkt sich **ganze Verzeichnis-Pfade** als „erledigt", sobald sie einmal gescannt
+  wurden — unabhängig davon, ob einzelne Dateien darin erfolgreich importiert wurden
+  oder nicht. Wird später eine **neue** Datei in einen **bereits zuvor gescannten**
+  Ordner gesynct (z. B. ein nachträglich ergänztes Kapitel in einem schon importierten
+  Hörbuch-Ordner, oder einfach weil beim Erstscan eine kaputte Testdatei im selben
+  Ordner lag), überspringt beets diesen Pfad **dauerhaft und stillschweigend** — auch
+  beim nächsten automatischen Watcher-Lauf. Beobachtetes Symptom:
+  `Skipping previously-imported path: <dir>` im `beet -v import`-Log, obwohl neue,
+  valide Dateien dort liegen. Stattdessen `duplicate_action: skip` nutzen: beets
+  erkennt Duplikate dann über die Library (Datei-Inhalt/Tags), nicht über den
+  Verzeichnis-Pfad-Cache — jeder volle Rescan ist dadurch idempotent, ohne dass neue
+  Dateien in alten Ordnern verloren gehen. Kosten: jeder Sync scannt den ganzen Baum
+  neu statt nur neue Pfade — für die Hörmond-Bibliotheksgröße unkritisch.
 - `move: no`, `copy: no`, `write: no` ist **nicht verhandelbar**: Die Medienpartition wird per rsync von außen befüllt; beets darf weder verschieben noch in die Dateien zurückschreiben (Konsistenz mit MPD + read-only-Medien-Annahme).
 - beets-Library (`/var/lib/mediaplayer/beets/library.db`) liegt auf der persistenten, schreibbaren `.state`-Zone (overlayfs-sicher).
 - `fetchart auto: no` in M2 — kein Online-Zugriff; das hält M2 netz-/datenschutzfrei. M7 dreht das auf.
@@ -1999,7 +2013,7 @@ Nicht sehen: hartcodierte Strings, doppelte Listener (StrictMode), leere Liste t
 **Ziel:** Das neue M2-App-Bundle läuft auf dem Pi: `library:list` zeigt synchronisierte Medien, Tap spielt über die Klinke, Position wird in der echten `/var/lib/mediaplayer/state.db` (WAL, persistent) geschrieben, und der Sync-Watcher löst `library:updated` aus.
 
 **Beschreibung:**
-> overlayfs ist seit M1 scharf → rootfs read-only. System-Änderungen (Services) erfordern: **overlay aus → ändern → overlay an**. Das App-Bundle selbst liegt unter `/opt/hoermond/app` (M1) — ebenfalls auf rootfs, also overlay aus zum Deployen.
+> overlayfs ist seit M1 scharf → rootfs read-only. System-Änderungen (Services) erfordern: **overlay aus → ändern → overlay an**. Das App-Bundle selbst liegt unter `/home/player/hoermond/repo/app` (M1) — ebenfalls auf rootfs, also overlay aus zum Deployen.
 1. overlayfs temporär deaktivieren (M1 T1.16): `sudo raspi-config` → Performance → Overlay FS → Disable → Reboot.
 2. Auf dem Laptop bauen:
    ```bash
@@ -2008,13 +2022,13 @@ Nicht sehen: hartcodierte Strings, doppelte Listener (StrictMode), leere Liste t
    ```
 3. Bundle auf den Pi kopieren (als `player`, App-Pfad aus M1):
    ```bash
-   rsync -avz --delete out/ player@hoermond.local:/opt/hoermond/app/out/
-   rsync -avz package.json player@hoermond.local:/opt/hoermond/app/
+   rsync -avz --delete out/ player@hoermond.local:/home/player/hoermond/repo/app/out/
+   rsync -avz package.json player@hoermond.local:/home/player/hoermond/repo/app/
    ```
 4. Native Module gegen die Pi-Electron-ABI neu bauen (Grundvertrag/ADR-3, `better-sqlite3`):
    ```bash
    ssh player@hoermond.local
-   cd /opt/hoermond/app && npm install --omit=dev
+   cd /home/player/hoermond/repo/app && npm install --omit=dev
    npx electron-rebuild -f -w better-sqlite3   # ABI-Fix, Pflicht nach install
    ```
 5. Sicherstellen, dass die echten Pfade greifen (kein `HOERMOND_DB_PATH`-Override → Default `/var/lib/mediaplayer/state.db`; `HOERMOND_SYNC_LOG`-Default `/var/lib/mediaplayer/sync/sync.log`). MPD-Default-Host/Port (127.0.0.1:6600) stimmen aus M1.
@@ -2028,7 +2042,7 @@ Nicht sehen: hartcodierte Strings, doppelte Listener (StrictMode), leere Liste t
 - `media-watcher.service` und `media-sync` sind System-Services auf rootfs — bei Overlay-aktiv unveränderlich; Änderungen daran ebenfalls nur im overlay-aus-Fenster.
 
 **Dateien/Artefakte:**
-- Verändert (auf dem Pi): `/opt/hoermond/app/out`, `/opt/hoermond/app/node_modules`
+- Verändert (auf dem Pi): `/home/player/hoermond/repo/app/out`, `/home/player/hoermond/repo/app/node_modules`
 
 **Verifikation:**
 ```bash
