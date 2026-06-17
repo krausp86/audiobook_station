@@ -57,6 +57,13 @@ html, body, #root {
   -webkit-touch-callout: none;
 }
 
+/* Pi-Display ist 180° gedreht (lcd_rotate=2). CSS-Transform dreht Touch-Hittesting
+   mit — (x,y) → (800-x, 480-y) — ohne den DSI-Rotate rückgängig zu machen. */
+#root {
+  transform: rotate(180deg);
+  transform-origin: 400px 240px;
+}
+
 /* Typo-Utility-Klassen */
 .t-heading-xl {
   font-size: 32px;
