@@ -1,6 +1,7 @@
 import { getDb } from '../db';
 import { upsertPosition } from '../db/dao';
 import { getState } from '../mpd/control';
+import { getMpd } from '../mpd';
 
 const SAVE_INTERVAL_MS = 10_000;
 
@@ -18,11 +19,26 @@ async function saveNowInternal(): Promise<void> {
     const st = await getState();
     if (st.status !== 'playing' || !st.currentPath) return;
 
-    // Extract unit path (same logic as in listLibrary)
+    // Extract unit path — mirrors the grouping logic in listLibrary
     const parts = st.currentPath.split('/');
-    const unitPath = parts.slice(0, Math.min(3, parts.length - 1)).join('/') || parts[0];
+    const top = parts[0];
+    let unitPath: string;
+    let displayTitle: string;
 
-    const type = unitPath.startsWith('audiobooks') ? 'audiobook' : 'music';
+    if (top === 'music') {
+      // Music: look up AlbumArtist+Album tags from MPD for consistent grouping
+      const mpd = await getMpd();
+      const [song] = (await mpd.send('currentsong')) ?? [];
+      const albumArtist = song?.['AlbumArtist'] ?? song?.['Artist'] ?? 'Unknown Artist';
+      const album = song?.['Album'] ?? 'Unknown Album';
+      unitPath = `music/${albumArtist}/${album}`;
+      displayTitle = album;
+    } else {
+      unitPath = parts.slice(0, Math.min(3, parts.length - 1)).join('/') || parts[0];
+      displayTitle = parts[parts.length - 2] ?? unitPath;
+    }
+
+    const type = top === 'audiobooks' ? 'audiobook' : 'music';
     const db = getDb();
 
     // Ensure the media item exists in the catalog
@@ -31,7 +47,7 @@ async function saveNowInternal(): Promise<void> {
     ).run({
       path: unitPath,
       type,
-      title: parts[parts.length - 2] ?? unitPath,
+      title: displayTitle,
       ts: new Date().toISOString(),
     });
 

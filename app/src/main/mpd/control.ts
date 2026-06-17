@@ -11,8 +11,25 @@ import type { PlayerState } from '@shared/ipc-contract';
 export async function play(path: string, position?: number): Promise<void> {
   const mpd = await getMpd();
   await mpd.send('clear');
-  const esc = path.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-  await mpd.send(`add "${esc}"`);
+
+  const segments = path.split('/');
+  if (segments[0] === 'music' && segments.length >= 3) {
+    // Virtual music path — group by AlbumArtist+Album tags (flat file structure)
+    const albumArtist = segments[1];
+    const album = segments.slice(2).join('/');
+    const escArtist = albumArtist.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    const escAlbum = album.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    await mpd.send(`findadd albumartist "${escArtist}" album "${escAlbum}"`);
+    // If AlbumArtist tag is absent on the files, fall back to Artist tag
+    const [statusCheck] = await mpd.send('status');
+    if (!statusCheck || parseInt(statusCheck['playlistlength'] ?? '0', 10) === 0) {
+      await mpd.send(`findadd artist "${escArtist}" album "${escAlbum}"`);
+    }
+  } else {
+    const esc = path.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    await mpd.send(`add "${esc}"`);
+  }
+
   await mpd.send('play');
   if (position && position > 0) {
     await mpd.send(`seekcur ${Math.floor(position)}`);

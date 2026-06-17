@@ -36,9 +36,18 @@ export async function listLibrary(): Promise<LibraryListResponse> {
     const top = file.split('/')[0];
     const type: 'audiobook' | 'music' = top === 'audiobooks' ? 'audiobook' : 'music';
 
-    // Unit path: group by up to 3 path segments (e.g. "audiobooks/Author/Title")
+    // Unit path:
+    // - Audiobooks: group by directory structure (up to 3 path segments)
+    // - Music: group by AlbumArtist + Album tags (handles flat file structures)
     const parts = file.split('/');
-    const unitPath = parts.slice(0, Math.min(3, parts.length - 1)).join('/') || parts[0];
+    let unitPath: string;
+    if (type === 'music') {
+      const albumArtist = f['AlbumArtist'] ?? f['Artist'] ?? 'Unknown Artist';
+      const album = f['Album'] ?? 'Unknown Album';
+      unitPath = `music/${albumArtist}/${album}`;
+    } else {
+      unitPath = parts.slice(0, Math.min(3, parts.length - 1)).join('/') || parts[0];
+    }
 
     // Accumulate durations
     const dur = f['Time'] ? parseInt(f['Time'], 10) : 0;
