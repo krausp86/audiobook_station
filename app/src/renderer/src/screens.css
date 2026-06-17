@@ -1,0 +1,332 @@
+/* S0 Welcome Screen */
+.s0-welcome {
+  width: 800px;
+  height: 480px;
+  background: var(--flieder-tint);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  text-align: center;
+  opacity: 1;
+  transition: opacity 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.s0-welcome.is-fading {
+  opacity: 0;
+}
+
+.s0-title {
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.s0-subtitle {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* S1 Start Screen */
+.s1-start {
+  width: 800px;
+  height: 480px;
+  padding: var(--safe-area);
+  background: var(--bg-app);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.s1-logo {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.s1-wordmark {
+  color: var(--text-primary);
+}
+
+.s1-choices {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.s1-tile {
+  width: 360px;
+  height: 360px;
+  border-radius: 24px;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.s1-tile--audiobooks {
+  background: var(--flieder-tint);
+}
+
+.s1-tile--music {
+  background: var(--flieder-tint);
+}
+
+.s1-tile-label {
+  color: var(--text-on-flieder);
+}
+
+/* Library Grid Screen */
+.grid-screen {
+  width: 800px;
+  height: 480px;
+  display: flex;
+  flex-direction: column;
+}
+
+.grid-titlebar {
+  height: 44px;
+  flex: 0 0 44px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--safe-area);
+}
+
+.grid-title {
+  flex: 1;
+  color: var(--text-primary);
+}
+
+.grid-sync-slot {
+  width: 44px;
+  height: 44px;
+}
+
+.grid-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 var(--safe-area) calc(var(--space-3) + 40px);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.grid-section-header {
+  height: 32px;
+  line-height: 32px;
+  margin: var(--space-1) 0;
+  color: var(--text-primary);
+}
+
+.grid-cells {
+  display: grid;
+  grid-template-columns: repeat(4, 180px);
+  column-gap: 13px;
+  row-gap: var(--space-2);
+}
+
+/* Empty State */
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  text-align: center;
+  padding: var(--space-4);
+}
+
+.empty-text {
+  color: var(--text-primary);
+  max-width: 520px;
+  margin: 0;
+}
+
+/* BackButton */
+.back-button {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+}
+
+/* MediaTile */
+.tile {
+  width: 180px;
+}
+
+.tile-cover {
+  position: relative;
+  width: 180px;
+  height: 180px;
+}
+
+.tile-title {
+  display: block;
+  width: 180px;
+  height: 28px;
+  margin-top: 4px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.tile-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  line-height: 0;
+}
+
+.tile-progressbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6px;
+  background: rgba(110, 84, 184, 0.25);
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  overflow: hidden;
+}
+
+.tile-progressbar-fill {
+  display: block;
+  height: 6px;
+  background: var(--flieder-deep);
+}
+
+.tile-holdring {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  border: 4px solid var(--flieder);
+  opacity: calc(var(--hold) * 1);
+  mask: conic-gradient(#000 calc(var(--hold) * 360deg), transparent 0);
+  -webkit-mask: conic-gradient(#000 calc(var(--hold) * 360deg), transparent 0);
+}
+
+/* S4 Detail Overlay */
+.s4-scrim {
+  position: absolute;
+  inset: 0;
+  width: 800px;
+  height: 480px;
+  background: var(--scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.s4-scrim.is-entered {
+  opacity: 1;
+}
+
+.s4-scrim.is-closing {
+  opacity: 0;
+  transition: opacity 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.s4-card {
+  position: relative;
+  min-width: 360px;
+  max-width: 600px;
+  background: var(--surface);
+  border-radius: 24px;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  transform: scale(0.96);
+  opacity: 0;
+  transition:
+    transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.s4-scrim.is-entered .s4-card {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.s4-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: var(--text-secondary);
+}
+
+.s4-title {
+  color: var(--text-primary);
+  margin: 0;
+  text-align: center;
+}
+
+.s4-author {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.s4-progress {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.s4-restart {
+  min-height: 60px;
+  padding: 0 var(--space-3);
+  border-radius: 16px;
+  background: var(--flieder-deep);
+  color: var(--text-on-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Now-Playing Bar */
+.now-playing-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--safe-area);
+  background: var(--flieder-tint);
+  color: var(--text-on-flieder);
+}
+
+.np-path {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.np-btn {
+  min-height: 32px;
+  cursor: none;
+}

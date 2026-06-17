@@ -1,0 +1,144 @@
+@import './assets/fonts/fonts.css';
+
+:root {
+  /* Farben */
+  --flieder: #9B7EDC;
+  --flieder-deep: #6E54B8;
+  --flieder-tint: #F2EDFB;
+  --bg-app: #FBFAFE;
+  --surface: #FFFFFF;
+  --text-primary: #2A2342;
+  --text-secondary: #6B6480;
+  --text-on-flieder: #2A2342;
+  --text-on-deep: #FFFFFF;
+  --success: #2E7D52;
+  --info: #2563B0;
+  --warning: #A85F0C;
+  --parent-accent: #374151;  /* erst M5 */
+  --parent-bg: #F3F4F6;      /* erst M5 */
+  --scrim: rgba(42, 35, 66, 0.55);
+
+  /* Typografie */
+  --font-family: 'Atkinson Hyperlegible', 'Nunito', system-ui, sans-serif;
+
+  /* Spacing-Basis 8px */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --safe-area: 20px;
+  --titlebar-h: 44px;
+
+  /* Timing */
+  --t-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --t-base-dur: 200ms;
+  --t-press-in: 90ms;
+  --t-press-out: 120ms;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 800px;
+  height: 480px;
+  overflow: hidden;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  /* Kiosk: kein Cursor, keine Textauswahl, kein Touch-Highlight */
+  cursor: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* Typo-Utility-Klassen */
+.t-heading-xl {
+  font-size: 32px;
+  line-height: 38px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.t-heading {
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
+}
+
+.t-label {
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 600;
+}
+
+.t-body {
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 400;
+}
+
+.t-tiny {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+/* Hover-Schutz für Touch-Geräte */
+@media (hover: none) {
+  /* Touch-Gerät: keine zusätzlichen Hover-Effekte */
+}
+
+/* Pressable-Basis (CSS aus T3.04) */
+.pressable {
+  transition:
+    transform var(--t-press-out) ease-in,
+    filter var(--t-press-out) ease-in;
+  transform: scale(1);
+  filter: brightness(1);
+  touch-action: manipulation;
+  cursor: none;
+}
+
+.pressable.is-pressed {
+  transition:
+    transform var(--t-press-in) ease-out,
+    filter var(--t-press-in) ease-out;
+  transform: scale(0.96);
+  filter: brightness(0.94);
+}
+
+/* Boot-Screen Styles (behalten für Fehlerbehandlung) */
+.boot-screen {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.boot-text {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.boot-text.error-text {
+  color: var(--warning);
+}
+
+/* Sichtbar versteckt (für Screen Reader) */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

@@ -1,11 +1,10 @@
-import './App.css';
 import { useEffect, useState } from 'react';
 import { useT } from './i18n/I18nContext';
-import Library from './Library';
+import Root from './Root';
 
 /**
- * Root application component.
- * Displays error screen if database initialization failed, otherwise shows Library.
+ * App component: top-level error handler.
+ * Displays error screen if database initialization failed, otherwise shows Root navigation.
  */
 export default function App(): React.JSX.Element {
   const t = useT();
@@ -20,7 +19,6 @@ export default function App(): React.JSX.Element {
   if (dbError) {
     return (
       <div className="boot-screen">
-        <div className="logo-placeholder" aria-hidden="true" />
         <p className="boot-text error-text">
           {t('error.db')}: {dbError}
         </p>
@@ -28,5 +26,5 @@ export default function App(): React.JSX.Element {
     );
   }
 
-  return <Library />;
+  return <Root />;
 }

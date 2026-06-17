@@ -3,7 +3,7 @@ import { play, pause, stop, seek, getState } from '../mpd/control';
 import { listLibrary } from '../library/list';
 import { getMpd } from '../mpd';
 import { getDb } from '../db';
-import { getOnboardingSeen, setOnboardingSeen } from '../db/dao';
+import { getOnboardingSeen, setOnboardingSeen, upsertPosition } from '../db/dao';
 import { saveNow } from '../player/persist';
 
 /**
@@ -62,6 +62,13 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
   // onboarding:setSeen — mark onboarding as seen/unseen
   ipcMain.handle('onboarding:setSeen', (_e, p: { seen: boolean }) => {
     setOnboardingSeen(getDb(), p.seen);
+    return { ok: true };
+  });
+
+  // library:restartFromBeginning — reset position to 0 and play from beginning
+  ipcMain.handle('library:restartFromBeginning', async (_e, p: { path: string }) => {
+    upsertPosition(getDb(), p.path, 0, 0);
+    await play(p.path);
     return { ok: true };
   });
 

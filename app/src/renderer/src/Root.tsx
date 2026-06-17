@@ -1,0 +1,89 @@
+import { useEffect, useState, useMemo } from 'react';
+import S0Welcome from './screens/S0Welcome';
+import S1Start from './screens/S1Start';
+import LibraryGrid from './screens/LibraryGrid';
+import S4Detail from './screens/S4Detail';
+import NowPlayingBar from './components/NowPlayingBar';
+import type { LibraryListResponse, MediaItem } from '@shared/ipc-contract';
+
+type Screen =
+  | { name: 's0' }
+  | { name: 's1' }
+  | { name: 'grid'; type: 'audiobook' | 'music' };
+
+/**
+ * Root navigation component: manages screen state, onboarding, library loading,
+ * and S4 overlay. Orchestrates all M3 navigation and library interactions.
+ */
+export default function Root(): React.JSX.Element {
+  const [screen, setScreen] = useState<Screen | null>(null); // null = loading onboarding
+  const [lib, setLib] = useState<LibraryListResponse | null>(null);
+  const [detail, setDetail] = useState<MediaItem | null>(null); // S4 overlay
+
+  // 1) Load onboarding flag -> S0 or S1
+  useEffect(() => {
+    void window.hoermond.invoke('onboarding:getSeen', undefined).then(({ seen }) => {
+      setScreen(seen ? { name: 's1' } : { name: 's0' });
+    });
+  }, []);
+
+  // 2) Load library + listen for updates
+  const loadLib = (): void => {
+    void window.hoermond.invoke('library:list', undefined).then(setLib);
+  };
+
+  useEffect(() => {
+    loadLib();
+    const off = window.hoermond.on('library:updated', loadLib);
+    return () => off();
+  }, []);
+
+  // S0 done -> set flag + go to S1
+  const finishOnboarding = (): void => {
+    void window.hoermond.invoke('onboarding:setSeen', { seen: true });
+    setScreen({ name: 's1' });
+  };
+
+  // Filter library by type (S2/S3)
+  const filtered = useMemo<LibraryListResponse>(() => {
+    if (!lib || !screen || screen.name !== 'grid') {
+      return { recentlyPlayed: [], all: [] };
+    }
+    const ty = screen.type;
+    return {
+      recentlyPlayed: lib.recentlyPlayed.filter((m) => m.type === ty),
+      all: lib.all.filter((m) => m.type === ty),
+    };
+  }, [lib, screen]);
+
+  // Tap on tile -> play (no S5 in M3, Now-Playing-Bar provides feedback)
+  const play = (item: MediaItem): void => {
+    void window.hoermond.invoke('player:play', { path: item.path });
+  };
+
+  if (!screen) return <div className="boot-screen" />; // loading frame
+
+  return (
+    <>
+      {screen.name === 's0' && <S0Welcome onDone={finishOnboarding} />}
+      {screen.name === 's1' && (
+        <S1Start onChoose={(type) => setScreen({ name: 'grid', type })} />
+      )}
+      {screen.name === 'grid' && (
+        <LibraryGrid
+          type={screen.type}
+          data={filtered}
+          onBack={() => setScreen({ name: 's1' })}
+          onPlay={play}
+          onOpenDetail={(item) => setDetail(item)}
+        />
+      )}
+
+      {/* S4 overlay: above current screen, no new nav level */}
+      {detail && <S4Detail item={detail} onClose={() => setDetail(null)} />}
+
+      {/* Now-Playing-Bar above S1/Grid (renders null when stopped) */}
+      {screen.name !== 's0' && <NowPlayingBar />}
+    </>
+  );
+}

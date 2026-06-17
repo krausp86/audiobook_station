@@ -1,4 +1,5 @@
 {
+  "app.name": "Hörmond",
   "boot.starting": "Hörmond startet",
   "error.db": "Datenbank-Fehler",
   "library.recentlyPlayed": "Zuletzt gehört",
@@ -6,9 +7,23 @@
   "library.audiobooks": "Hörbücher",
   "library.music": "Musik",
   "library.empty": "Noch keine Medien vorhanden",
+  "library.emptyTitle": "Hier ist noch nichts — deine Hörbücher kommen bald!",
   "player.playing": "Spielt",
   "player.paused": "Pausiert",
   "player.stopped": "Gestoppt",
   "player.pause": "Pause",
-  "player.stop": "Stopp"
+  "player.stop": "Stopp",
+  "onboarding.welcome.title": "Hallo! Schön, dass du da bist.",
+  "onboarding.welcome.subtitle": "Deine Hörbücher und Lieder kommen gleich.",
+  "start.audiobooks": "Hörbücher",
+  "start.music": "Musik",
+  "nav.back": "Zurück",
+  "section.recentlyPlayed": "Zuletzt gehört",
+  "section.all": "Alle",
+  "detail.author": "Autor",
+  "detail.progress": "Fortschritt",
+  "detail.restart": "Von vorne starten",
+  "detail.close": "Schließen",
+  "badge.inProgress": "Weiterhören",
+  "badge.done": "Fertig"
 }

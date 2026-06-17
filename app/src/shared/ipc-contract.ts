@@ -74,6 +74,10 @@ export interface IpcCommands {
     request: { seen: boolean };
     response: { ok: boolean };
   };
+  'library:restartFromBeginning': {
+    request: { path: string };
+    response: { ok: boolean };
+  };
 }
 
 /** Events: Main -> Renderer (push, via webContents.send). */
@@ -105,6 +109,7 @@ export const ALLOWED_COMMANDS: IpcCommandChannel[] = [
   'app:getVersion',
   'library:list',
   'library:rescan',
+  'library:restartFromBeginning',
   'player:play',
   'player:pause',
   'player:stop',
