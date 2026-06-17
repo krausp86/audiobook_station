@@ -12,6 +12,7 @@ interface PressableProps {
   children: ReactNode;
   /** optionale Pointer-Hooks (z. B. für Long-Press-Hook T3.13b). */
   onPointerDown?: (e: PointerEvent) => void;
+  onPointerMove?: (e: PointerEvent) => void;
   onPointerUp?: (e: PointerEvent) => void;
   onPointerLeave?: (e: PointerEvent) => void;
   disabled?: boolean;
@@ -22,6 +23,7 @@ export default function Pressable({
   className,
   children,
   onPointerDown,
+  onPointerMove,
   onPointerUp,
   onPointerLeave,
   disabled,
@@ -38,6 +40,9 @@ export default function Pressable({
           setPressed(true);
           onPointerDown?.(e);
         }
+      }}
+      onPointerMove={(e) => {
+        onPointerMove?.(e);
       }}
       onPointerUp={(e) => {
         if (disabled) return;

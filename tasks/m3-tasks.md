@@ -2271,9 +2271,9 @@ sichtbares Stocken/Tearing). Dies adressiert das im milestones.md vermerkte
 - Ggf.: `LibraryGrid.tsx`/`MediaTile.tsx`-CSS (Performance-Tuning)
 
 **Akzeptanzkriterien:**
-- [ ] Mit ~100 Kacheln scrollt das Grid am Pi subjektiv flüssig (kein sichtbares
+- [x] Mit ~100 Kacheln scrollt das Grid am Pi subjektiv flüssig (kein sichtbares
   Stocken), Bounce bleibt weich.
-- [ ] Press-Feedback bleibt nach dem Scrollen prompt (< 100 ms gefühlt).
+- [x] Press-Feedback bleibt nach dem Scrollen prompt (< 100 ms gefühlt).
 - [ ] Falls Tuning nötig war: Maßnahme dokumentiert und nach Re-Deploy bestätigt.
 - [ ] Ergebnis im Abnahme-Protokoll festgehalten (inkl. Medienanzahl).
 
@@ -2321,11 +2321,11 @@ verschobenen Elemente. **Geräte-Abnahme am echten Display.**
 - Ggf.: Screen-CSS-Feinjustierung
 
 **Akzeptanzkriterien:**
-- [ ] Alle Screens (S0/S1/Grid/S4/Empty) sitzen ohne Überlauf/Abschneiden in 800×480.
-- [ ] Grid: 4 Spalten füllen 760 px mit gleichmäßigen Lücken (≥12 px), Ränder
+- [x] Alle Screens (S0/S1/Grid/S4/Empty) sitzen ohne Überlauf/Abschneiden in 800×480.
+- [x] Grid: 4 Spalten füllen 760 px mit gleichmäßigen Lücken (≥12 px), Ränder
   symmetrisch; angeschnittene zweite Reihe sichtbar.
-- [ ] S1: zwei 360×360-Kacheln, 24 px Abstand, mittig.
-- [ ] Titelleiste 44 px, Zurück-Button 64×64 links, Sync-Platz rechts.
+- [x] S1: zwei 360×360-Kacheln, 24 px Abstand, mittig.
+- [x] Titelleiste 44 px, Zurück-Button 64×64 links, Sync-Platz rechts.
 - [ ] Befund je Screen im Abnahme-Protokoll.
 
 ---
@@ -2373,10 +2373,10 @@ erkennbar. **Geräte-Abnahme.**
 - Ggf.: Theme-/Komponenten-CSS-Anpassung
 
 **Akzeptanzkriterien:**
-- [ ] Alle Texte aus Kind-Distanz lesbar; Body ≥ 18 px.
-- [ ] Kein heller Flieder mit weißem Text (alle Flieder-Hintergründe geprüft).
-- [ ] Weiterhören- (Pfeil) und Fertig-Badge (Häkchen) auch ohne Farbe unterscheidbar.
-- [ ] Fortschrittsbalken aus Distanz als Fortschritt erkennbar.
+- [x] Alle Texte aus Kind-Distanz lesbar; Body ≥ 18 px.
+- [x] Kein heller Flieder mit weißem Text (alle Flieder-Hintergründe geprüft).
+- [x] Weiterhören- (Pfeil) und Fertig-Badge (Häkchen) auch ohne Farbe unterscheidbar.
+- [x] Fortschrittsbalken aus Distanz als Fortschritt erkennbar.
 - [ ] Befund (inkl. optionalem Kind-Test) im Abnahme-Protokoll.
 
 ---

@@ -16,15 +16,20 @@ interface UseLongPressOptions {
 
 interface UseLongPressResult {
   onPointerDown: (e: PointerEvent) => void;
+  onPointerMove: (e: PointerEvent) => void;
   onPointerUp: (e: PointerEvent) => void;
   onPointerLeave: (e: PointerEvent) => void;
   /** 0..1 from 300ms; 0 outside hold phase. For visual ring feedback. */
   holdRatio: number;
 }
 
+const MOVE_THRESHOLD_PX = 8;
+
 export function useLongPress({ onLongPress, onTap }: UseLongPressOptions): UseLongPressResult {
   const [holdRatio, setHoldRatio] = useState(0);
   const startRef = useRef<number>(0);
+  const startPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const movedRef = useRef(false);
   const firedRef = useRef(false);
   const rafRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -47,13 +52,16 @@ export function useLongPress({ onLongPress, onTap }: UseLongPressOptions): UseLo
   }, []);
 
   const onPointerDown = useCallback(
-    (_e: PointerEvent) => {
+    (e: PointerEvent) => {
       firedRef.current = false;
+      movedRef.current = false;
       startRef.current = Date.now();
+      startPosRef.current = { x: e.clientX, y: e.clientY };
       setHoldRatio(0);
       rafRef.current = requestAnimationFrame(tick);
       timerRef.current = setTimeout(() => {
-        firedRef.current = true; // long-press detected
+        if (movedRef.current) return; // scroll in progress — ignore
+        firedRef.current = true;
         cleanup();
         onLongPress();
       }, LONG_PRESS_MS);
@@ -61,23 +69,36 @@ export function useLongPress({ onLongPress, onTap }: UseLongPressOptions): UseLo
     [tick, cleanup, onLongPress],
   );
 
+  const onPointerMove = useCallback(
+    (e: PointerEvent) => {
+      if (movedRef.current) return;
+      const dx = e.clientX - startPosRef.current.x;
+      const dy = e.clientY - startPosRef.current.y;
+      if (dx * dx + dy * dy > MOVE_THRESHOLD_PX * MOVE_THRESHOLD_PX) {
+        movedRef.current = true;
+        firedRef.current = true; // cancel tap + long-press
+        cleanup();
+      }
+    },
+    [cleanup],
+  );
+
   const onPointerUp = useCallback(
     (_e: PointerEvent) => {
       const wasLong = firedRef.current;
       cleanup();
-      if (!wasLong) onTap(); // released before 600ms => short tap
+      if (!wasLong) onTap();
     },
     [cleanup, onTap],
   );
 
   const onPointerLeave = useCallback(
     (_e: PointerEvent) => {
-      // Finger slides away: cancel both tap and long-press
       firedRef.current = true;
       cleanup();
     },
     [cleanup],
   );
 
-  return { onPointerDown, onPointerUp, onPointerLeave, holdRatio };
+  return { onPointerDown, onPointerMove, onPointerUp, onPointerLeave, holdRatio };
 }

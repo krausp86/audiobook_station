@@ -54,31 +54,33 @@ These tests require deployment to the actual Raspberry Pi 4 with 800×480 touchs
 **Status:** Pending (Pi deployment required)
 
 **Checklist:**
-- [ ] Deploy M3 bundle to Pi (`/home/player/hoermond/repo/app`)
-- [ ] `npm install && npx electron-rebuild -f -w better-sqlite3`
-- [ ] `sudo systemctl restart mediaplayer.service`
-- [ ] Tap on tile → Medium plays (capac itous touch works)
+- [x] Deploy M3 bundle to Pi (`/home/player/hoermond/repo/app`)
+- [x] `npm install && npx electron-rebuild -f -w better-sqlite3`
+- [x] `sudo systemctl restart mediaplayer.service`
+- [x] Tap on tile → Medium plays (capac itous touch works)
 - [ ] Long-tap (600ms) → S4 overlay opens, hold ring visible from 300ms
-- [ ] Short tap does NOT open S4
-- [ ] Vertical scroll with finger → kinetic momentum + bounce
-- [ ] Tap outside S4 scrim → overlay closes
-- [ ] ✕ button → overlay closes
-- [ ] Press-feedback (Scale 0,96) appears < 100ms
-- [ ] No cursor visible
-- [ ] S0 appears on first run, never again after reboot
-- [ ] Touch behavior is distinct from Laptop/Mouse (test capac itive-specific)
+--> no holding ring visible, not necessary
+- [x] Short tap does NOT open S4
+- [x] Vertical scroll with finger → kinetic momentum + bounce
+- [x] Tap outside S4 scrim → overlay closes
+- [x] ✕ button → overlay closes
+- [x] Press-feedback (Scale 0,96) appears < 100ms
+- [x] No cursor visible
+- [x] S0 appears on first run, never again after reboot
+- [x] Touch behavior is distinct from Laptop/Mouse (test capac itive-specific)
 
 ### T3.18 — Scroll Performance (~100 Covers)
 **Status:** Pending (Pi measurement required)
 
 **Checklist:**
-- [ ] Sync ~100 media items to Pi library
-- [ ] Navigate to Grid (S2/S3)
-- [ ] Rapid vertical scroll up/down → no visible stuttering
-- [ ] Bounce at edges feels smooth
-- [ ] Press-feedback remains prompt during/after scroll
-- [ ] FPS observation (DevTools remote, if available)
-- [ ] Result: Smooth / Tuned / Blocked → Virtualization needed
+- [x] Sync ~100 media items to Pi library
+- [x] Navigate to Grid (S2/S3)
+- [x] Rapid vertical scroll up/down → no visible stuttering
+- [x] Bounce at edges feels smooth
+- [x] Press-feedback remains prompt during/after scroll
+- [x] FPS observation (DevTools remote, if available)
+- [x] Result: Smooth / Tuned / Blocked → Virtualization needed
+--> Kommentar: Habe beim scrollen versehentlich songs gestartet, das sollte weniger sensibel sein, grad wenns kinder werden
 
 **Notes:**
 - Platzhalter-Cover sind leicht; echte Cover (M7) können schwerer sein
@@ -89,16 +91,16 @@ These tests require deployment to the actual Raspberry Pi 4 with 800×480 touchs
 
 **Checklist:**
 
-- [ ] **S0:** Logo + Greeting centered, `--flieder-tint` background, no cutoff
-- [ ] **S1:** Logo top-centered; two 360×360 tiles, 24px gap, no overflow
-- [ ] **Grid:** 44px titlebar, back-button 64×64 left, sync-slot right
-  - [ ] 4 columns × 180px + ~13px gaps = 760px (symmetric margins)
-  - [ ] Angeschnittene zweite Reihe sichtbar (Scroll-Signal)
-  - [ ] Sektions-Header 32px
-- [ ] **S4:** Card centered, all content visible, ✕ reachable
-- [ ] **Empty-State:** Logo + text centered, titlebar+sync-slot visible
-- [ ] **All edges:** 20px safe-area respected, nothing cut off
-- [ ] Real panel Overscan: compare visual layout to 800×480 grid
+- [x] **S0:** Logo + Greeting centered, `--flieder-tint` background, no cutoff
+- [x] **S1:** Logo top-centered; two 360×360 tiles, 24px gap, no overflow
+- [x] **Grid:** 44px titlebar, back-button 64×64 left, sync-slot right
+  - [x] 4 columns × 180px + ~13px gaps = 760px (symmetric margins)
+  - [x] Angeschnittene zweite Reihe sichtbar (Scroll-Signal)
+  - [x] Sektions-Header 32px
+- [x] **S4:** Card centered, all content visible, ✕ reachable
+- [x] **Empty-State:** Logo + text centered, titlebar+sync-slot visible
+- [x] **All edges:** 20px safe-area respected, nothing cut off
+- [x] Real panel Overscan: compare visual layout to 800×480 grid
 
 **Issues Found:** (none recorded yet)
 
@@ -106,14 +108,14 @@ These tests require deployment to the actual Raspberry Pi 4 with 800×480 touchs
 **Status:** Pending (Pi observation + optional kid test)
 
 **Checklist:**
-- [ ] Sektions-Header (24px) lesbar aus Kind-Distanz
-- [ ] Kachel-Titel (20px) lesbar
-- [ ] S0-Begrüßung (32px) lesbar
-- [ ] Body 18px minimum
-- [ ] **Kontrast-Audit:** Heller Flieder (`--flieder`/`--flieder-tint`) → dunkler Text (`--text-on-flieder`)
-- [ ] **Kontrast-Audit:** Tiefflieder (`--flieder-deep`) → weißer Text OK
-- [ ] Badge-Erkennbarkeit (Pfeil vs. Häkchen) auch ohne Farbe (Form-Redundanz)
-- [ ] Fortschrittsring (6px, bottom) erkennbar als Progress
+- [x] Sektions-Header (24px) lesbar aus Kind-Distanz
+- [x] Kachel-Titel (20px) lesbar
+- [x] S0-Begrüßung (32px) lesbar
+- [x] Body 18px minimum
+- [x] **Kontrast-Audit:** Heller Flieder (`--flieder`/`--flieder-tint`) → dunkler Text (`--text-on-flieder`)
+- [x] **Kontrast-Audit:** Tiefflieder (`--flieder-deep`) → weißer Text OK
+- [x] Badge-Erkennbarkeit (Pfeil vs. Häkchen) auch ohne Farbe (Form-Redundanz)
+- [x] Fortschrittsring (6px, bottom) erkennbar als Progress
 - [ ] Optional: Echtes Kind testet (Auswahl Hörbücher/Musik, erkennt "angefangen"?)
 
 **Issues Found:** (none recorded yet)

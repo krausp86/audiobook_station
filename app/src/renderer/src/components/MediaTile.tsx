@@ -31,6 +31,7 @@ export default function MediaTile({ item, onTap, onLongPress }: MediaTileProps):
     <Pressable
       className="tile"
       onPointerDown={lp.onPointerDown}
+      onPointerMove={lp.onPointerMove}
       onPointerUp={lp.onPointerUp}
       onPointerLeave={lp.onPointerLeave}
     >
