@@ -78,13 +78,13 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
   };
 
   const handleVolumeDown = (): void => {
-    if (!playerState?.volume) return;
+    if (playerState?.volume == null) return;
     const newVol = Math.max(0, playerState.volume - 10);
     void window.hoermond.invoke('player:setVolume', { volume: newVol });
   };
 
   const handleVolumeUp = (): void => {
-    if (!playerState?.volume === null) return;
+    if (playerState?.volume == null) return;
     const newVol = Math.min(100, (playerState?.volume ?? 0) + 10);
     void window.hoermond.invoke('player:setVolume', { volume: newVol });
   };

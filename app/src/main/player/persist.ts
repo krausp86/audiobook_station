@@ -51,15 +51,17 @@ async function saveNowInternal(): Promise<void> {
       ts: new Date().toISOString(),
     });
 
-    // Get current track index from MPD for multi-track media (e.g., MP3-Ordner)
-    // position_seconds is track-relative; track_index identifies the current song in playlist
+    // Get current track index and track-relative position from MPD for multi-track media (e.g., MP3-Ordner)
+    // Note: st.position is now GLOBAL for MP3-Ordner, but we need to store TRACK-RELATIVE position
+    // in the database so resume.ts can correctly restore with seekcur.
     const mpd = await getMpd();
     const [status] = await mpd.send('status');
     const st2 = status ?? {};
     const trackIndex = st2['song'] ? parseInt(st2['song'], 10) : 0;
+    const trackRelativePosition = st2['elapsed'] ? Math.round(parseFloat(st2['elapsed'])) : 0;
 
-    // Upsert position with current playback status and track index
-    upsertPosition(db, unitPath, trackIndex, st.position, st.status);
+    // Upsert position with track-relative position and track index
+    upsertPosition(db, unitPath, trackIndex, trackRelativePosition, st.status);
   } catch (err) {
     console.error('[persist] save failed:', err);
   }

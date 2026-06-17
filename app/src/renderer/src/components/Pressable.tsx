@@ -17,6 +17,8 @@ interface PressableProps {
   onPointerUp?: (e: PointerEvent) => void;
   onPointerLeave?: (e: PointerEvent) => void;
   disabled?: boolean;
+  /** Accessible name for the button (a11y) */
+  ariaLabel?: string;
 }
 
 const MOVE_THRESHOLD_PX = 14; // Matches useLongPress threshold
@@ -30,6 +32,7 @@ export default function Pressable({
   onPointerUp,
   onPointerLeave,
   disabled,
+  ariaLabel,
 }: PressableProps): React.JSX.Element {
   const [pressed, setPressed] = useState(false);
   const startPosRef = useRef<{ x: number; y: number } | null>(null);
@@ -77,6 +80,7 @@ export default function Pressable({
       className={`pressable${pressed ? ' is-pressed' : ''}${className ? ' ' + className : ''}`}
       role="button"
       aria-disabled={disabled}
+      aria-label={ariaLabel}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}

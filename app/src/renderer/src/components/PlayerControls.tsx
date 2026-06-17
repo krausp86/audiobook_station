@@ -147,7 +147,7 @@ export default function PlayerControls({
         <Pressable
           className="player-btn player-btn-play-pause"
           onTap={onPlayPause}
-          aria-label={isPlaying ? t('player.pauseAction') : t('player.play')}
+          ariaLabel={isPlaying ? t('player.pauseAction') : t('player.play')}
         >
           <PlayPauseIcon isPlaying={isPlaying} />
         </Pressable>
@@ -158,14 +158,14 @@ export default function PlayerControls({
         <Pressable
           className="player-btn player-btn-prev-chapter"
           onTap={onPrevChapter}
-          aria-label={t('player.prevChapter')}
+          ariaLabel={t('player.prevChapter')}
         >
           <SkipPrevIcon />
         </Pressable>
         <Pressable
           className="player-btn player-btn-next-chapter"
           onTap={onNextChapter}
-          aria-label={t('player.nextChapter')}
+          ariaLabel={t('player.nextChapter')}
         >
           <SkipNextIcon />
         </Pressable>
@@ -176,14 +176,14 @@ export default function PlayerControls({
         <Pressable
           className="player-btn player-btn-back15"
           onTap={onBack15}
-          aria-label={t('player.back15')}
+          ariaLabel={t('player.back15')}
         >
           <SeekBackIcon />
         </Pressable>
         <Pressable
           className="player-btn player-btn-forward30"
           onTap={onForward30}
-          aria-label={t('player.forward30')}
+          ariaLabel={t('player.forward30')}
         >
           <SeekForwardIcon />
         </Pressable>
@@ -195,7 +195,7 @@ export default function PlayerControls({
           className="player-btn player-btn-volume-down"
           onTap={onVolumeDown}
           disabled={volume === null}
-          aria-label={t('player.volumeDown')}
+          ariaLabel={t('player.volumeDown')}
         >
           <VolumeDownIcon />
         </Pressable>
@@ -203,7 +203,7 @@ export default function PlayerControls({
           className="player-btn player-btn-volume-up"
           onTap={onVolumeUp}
           disabled={volume === null}
-          aria-label={t('player.volumeUp')}
+          ariaLabel={t('player.volumeUp')}
         >
           <VolumeUpIcon />
         </Pressable>

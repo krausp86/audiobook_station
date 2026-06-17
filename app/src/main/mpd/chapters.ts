@@ -315,11 +315,29 @@ async function navigateToChapter(chapter: Chapter, mpd: MpdClient): Promise<bool
       if (chapter.playlistPos === undefined) return false;
       await mpd.send(`play ${chapter.playlistPos}`);
     } else if (chapter.navKind === 'seekOffset') {
-      // Seek within the current file (or add + play if needed)
+      // Seek within a file. Verify the correct file is loaded; if not, load it first.
       if (chapter.seekFile === undefined || chapter.fileOffsetSeconds === undefined) {
         return false;
       }
-      // Assume file is already loaded; just seek
+
+      // Check if the correct file is currently loaded
+      const [song] = (await mpd.send('currentsong')) ?? [];
+      const currentFile = song?.['file'];
+
+      // chapter.seekFile is absolute (/media/...), MPD song.file is relative.
+      // Normalize by comparing the relative path suffix.
+      const seekFileRelative = chapter.seekFile.replace(/^\/media\//, '');
+      const fileIsLoaded = currentFile && currentFile === seekFileRelative;
+
+      if (!fileIsLoaded) {
+        // Load the file first
+        await mpd.send('clear');
+        const escaped = seekFileRelative.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        await mpd.send(`add "${escaped}"`);
+        await mpd.send('play');
+      }
+
+      // Now seek to the chapter offset
       await mpd.send(`seekcur ${Math.floor(chapter.fileOffsetSeconds)}`);
     } else {
       return false;
