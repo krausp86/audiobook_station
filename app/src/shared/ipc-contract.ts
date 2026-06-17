@@ -1,3 +1,5 @@
+import type { Chapter } from './chapter';
+
 /** Represents a playable audio/video item (audiobook or music track). */
 export interface MediaItem {
   path: string;         // relativer Pfad in /media, z.B. "audiobooks/Autor/Titel"
@@ -21,8 +23,11 @@ export interface LibraryListResponse {
 export interface PlayerState {
   status: 'playing' | 'paused' | 'stopped';
   currentPath: string | null;  // relativer Pfad zu /media oder null
-  position: number;            // Sekunden
+  position: number;            // Sekunden, relativ zum gesamten Medium
   duration: number | null;     // Sekunden oder null
+  volume: number | null;       // 0–100, or null if no mixer available
+  chapters: Chapter[];         // empty array if media has no chapters (E12)
+  currentChapterIndex: number | null; // index into chapters array, or null if no chapters
 }
 
 /** Sync operation status event. */
@@ -60,6 +65,26 @@ export interface IpcCommands {
   };
   'player:seek': {
     request: { position: number };
+    response: { ok: boolean };
+  };
+  'player:seekRelative': {
+    request: { deltaSeconds: number };
+    response: { ok: boolean };
+  };
+  'player:setVolume': {
+    request: { volume: number };
+    response: { ok: boolean };
+  };
+  'player:chapterNext': {
+    request: void;
+    response: { ok: boolean };
+  };
+  'player:chapterPrev': {
+    request: void;
+    response: { ok: boolean };
+  };
+  'player:chapterGoto': {
+    request: { index: number };
     response: { ok: boolean };
   };
   'player:getState': {
@@ -114,6 +139,11 @@ export const ALLOWED_COMMANDS: IpcCommandChannel[] = [
   'player:pause',
   'player:stop',
   'player:seek',
+  'player:seekRelative',
+  'player:setVolume',
+  'player:chapterNext',
+  'player:chapterPrev',
+  'player:chapterGoto',
   'player:getState',
   'onboarding:getSeen',
   'onboarding:setSeen',

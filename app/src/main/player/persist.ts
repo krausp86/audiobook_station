@@ -51,8 +51,15 @@ async function saveNowInternal(): Promise<void> {
       ts: new Date().toISOString(),
     });
 
-    // Upsert position
-    upsertPosition(db, unitPath, 0, st.position);
+    // Get current track index from MPD for multi-track media (e.g., MP3-Ordner)
+    // position_seconds is track-relative; track_index identifies the current song in playlist
+    const mpd = await getMpd();
+    const [status] = await mpd.send('status');
+    const st2 = status ?? {};
+    const trackIndex = st2['song'] ? parseInt(st2['song'], 10) : 0;
+
+    // Upsert position with current playback status and track index
+    upsertPosition(db, unitPath, trackIndex, st.position, st.status);
   } catch (err) {
     console.error('[persist] save failed:', err);
   }

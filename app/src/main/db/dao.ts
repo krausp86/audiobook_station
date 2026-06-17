@@ -9,6 +9,7 @@ export interface PositionRow {
   track_index: number;
   position_seconds: number;
   last_played: string; // ISO-8601 timestamp
+  last_status: 'playing' | 'paused' | 'stopped'; // last known playback state (for resume logic)
 }
 
 /**
@@ -18,19 +19,21 @@ export interface PositionRow {
  * @param mediaPath relative path to media file
  * @param trackIndex index of current track (for multi-track items)
  * @param positionSeconds current playback position in seconds
+ * @param status current playback status ('playing', 'paused', or 'stopped'). Defaults to 'paused'.
  */
 export function upsertPosition(
   db: Database.Database,
   mediaPath: string,
   trackIndex: number,
   positionSeconds: number,
+  status: 'playing' | 'paused' | 'stopped' = 'paused',
 ): void {
   db.prepare(
-    `INSERT INTO playback_position (media_path, track_index, position_seconds, last_played)
-     VALUES (@p, @t, @s, @ts)
+    `INSERT INTO playback_position (media_path, track_index, position_seconds, last_played, last_status)
+     VALUES (@p, @t, @s, @ts, @st)
      ON CONFLICT(media_path) DO UPDATE SET
-       track_index = @t, position_seconds = @s, last_played = @ts`,
-  ).run({ p: mediaPath, t: trackIndex, s: positionSeconds, ts: new Date().toISOString() });
+       track_index = @t, position_seconds = @s, last_played = @ts, last_status = @st`,
+  ).run({ p: mediaPath, t: trackIndex, s: positionSeconds, ts: new Date().toISOString(), st: status });
 }
 
 /**
@@ -65,6 +68,24 @@ export function getOnboardingSeen(db: Database.Database): boolean {
     | { seen: number }
     | undefined;
   return (row?.seen ?? 0) === 1;
+}
+
+/**
+ * Update only the last_status of a playback position record.
+ * Called explicitly after pause/stop operations.
+ * @param db database instance
+ * @param mediaPath relative path to media file
+ * @param status the new status to record
+ */
+export function setLastStatus(
+  db: Database.Database,
+  mediaPath: string,
+  status: 'playing' | 'paused' | 'stopped',
+): void {
+  db.prepare(`UPDATE playback_position SET last_status = @st WHERE media_path = @p`).run({
+    p: mediaPath,
+    st: status,
+  });
 }
 
 /**

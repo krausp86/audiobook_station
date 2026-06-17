@@ -1,6 +1,7 @@
 import { Socket } from 'net';
 import type { BrowserWindow } from 'electron';
 import { getState } from './control';
+import { invalidateChaptersCache } from './chapters';
 
 const MPD_HOST = process.env['HOERMOND_MPD_HOST'] ?? '127.0.0.1';
 const MPD_PORT = Number(process.env['HOERMOND_MPD_PORT'] ?? 6600);
@@ -64,9 +65,13 @@ export function startIdleLoop(getWindow: () => BrowserWindow | null): () => void
       if (buffer.includes('OK\n')) {
         const changed = /changed: /.test(buffer);
         const changedDatabase = /changed: (database|update)/.test(buffer);
+        const changedPlaylist = /changed: playlist/.test(buffer);
         buffer = '';
         if (changed) {
           void pushState();
+        }
+        if (changedDatabase || changedPlaylist) {
+          invalidateChaptersCache();
         }
         if (changedDatabase) {
           getWindow()?.webContents.send('library:updated', { ts: Date.now() });

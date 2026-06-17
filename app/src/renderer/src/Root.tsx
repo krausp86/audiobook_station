@@ -3,13 +3,14 @@ import S0Welcome from './screens/S0Welcome';
 import S1Start from './screens/S1Start';
 import LibraryGrid from './screens/LibraryGrid';
 import S4Detail from './screens/S4Detail';
-import NowPlayingBar from './components/NowPlayingBar';
+import S5Player from './screens/S5Player';
 import type { LibraryListResponse, MediaItem } from '@shared/ipc-contract';
 
 type Screen =
   | { name: 's0' }
   | { name: 's1' }
-  | { name: 'grid'; type: 'audiobook' | 'music' };
+  | { name: 'grid'; type: 'audiobook' | 'music' }
+  | { name: 's5'; item: MediaItem };
 
 /**
  * Root navigation component: manages screen state, onboarding, library loading,
@@ -56,9 +57,9 @@ export default function Root(): React.JSX.Element {
     };
   }, [lib, screen]);
 
-  // Tap on tile -> play (no S5 in M3, Now-Playing-Bar provides feedback)
-  const play = (item: MediaItem): void => {
-    void window.hoermond.invoke('player:play', { path: item.path });
+  // Tap on tile -> open S5 Player screen
+  const openPlayer = (item: MediaItem): void => {
+    setScreen({ name: 's5', item });
   };
 
   if (!screen) return <div className="boot-screen" />; // loading frame
@@ -74,16 +75,21 @@ export default function Root(): React.JSX.Element {
           type={screen.type}
           data={filtered}
           onBack={() => setScreen({ name: 's1' })}
-          onPlay={play}
+          onPlay={openPlayer}
           onOpenDetail={(item) => setDetail(item)}
+        />
+      )}
+      {screen.name === 's5' && (
+        <S5Player
+          item={screen.item}
+          onBack={() =>
+            setScreen({ name: 'grid', type: screen.item.type })
+          }
         />
       )}
 
       {/* S4 overlay: above current screen, no new nav level */}
       {detail && <S4Detail item={detail} onClose={() => setDetail(null)} />}
-
-      {/* Now-Playing-Bar above S1/Grid (renders null when stopped) */}
-      {screen.name !== 's0' && <NowPlayingBar />}
     </>
   );
 }

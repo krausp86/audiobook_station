@@ -1,9 +1,10 @@
 import { ipcMain, app, type BrowserWindow } from 'electron';
-import { play, pause, stop, seek, getState } from '../mpd/control';
+import { play, pause, stop, seek, seekRelative, setVolume, getState } from '../mpd/control';
+import { chapterNext, chapterPrev, chapterGoto } from '../mpd/chapters';
 import { listLibrary } from '../library/list';
 import { getMpd } from '../mpd';
 import { getDb } from '../db';
-import { getOnboardingSeen, setOnboardingSeen, upsertPosition } from '../db/dao';
+import { getOnboardingSeen, setOnboardingSeen, upsertPosition, getLatestPosition, setLastStatus } from '../db/dao';
 import { saveNow } from '../player/persist';
 
 /**
@@ -26,6 +27,9 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
   ipcMain.handle('player:pause', async () => {
     await saveNow();
     await pause();
+    const db = getDb();
+    const latest = getLatestPosition(db);
+    if (latest) setLastStatus(db, latest.media_path, 'paused');
     return { ok: true };
   });
 
@@ -33,6 +37,9 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
   ipcMain.handle('player:stop', async () => {
     await saveNow();
     await stop();
+    const db = getDb();
+    const latest = getLatestPosition(db);
+    if (latest) setLastStatus(db, latest.media_path, 'stopped');
     return { ok: true };
   });
 
@@ -40,6 +47,45 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
   ipcMain.handle('player:seek', async (_e, p: { position: number }) => {
     await seek(p.position);
     return { ok: true };
+  });
+
+  // player:seekRelative — seek by delta (positive or negative)
+  ipcMain.handle('player:seekRelative', async (_e, p: { deltaSeconds: number }) => {
+    await seekRelative(p.deltaSeconds);
+    return { ok: true };
+  });
+
+  // player:setVolume — set mixer volume (0–100)
+  ipcMain.handle('player:setVolume', async (_e, p: { volume: number }) => {
+    await setVolume(p.volume);
+    return { ok: true };
+  });
+
+  // player:chapterNext — jump to next chapter
+  ipcMain.handle('player:chapterNext', async () => {
+    const state = await getState();
+    if (state.chapters.length === 0) return { ok: false };
+    const mpd = await getMpd();
+    const ok = await chapterNext(state.chapters, state.currentChapterIndex, mpd);
+    return { ok };
+  });
+
+  // player:chapterPrev — jump to previous chapter
+  ipcMain.handle('player:chapterPrev', async () => {
+    const state = await getState();
+    if (state.chapters.length === 0) return { ok: false };
+    const mpd = await getMpd();
+    const ok = await chapterPrev(state.chapters, state.currentChapterIndex, mpd);
+    return { ok };
+  });
+
+  // player:chapterGoto — jump to specific chapter
+  ipcMain.handle('player:chapterGoto', async (_e, p: { index: number }) => {
+    const state = await getState();
+    if (state.chapters.length === 0) return { ok: false };
+    const mpd = await getMpd();
+    const ok = await chapterGoto(state.chapters, p.index, mpd);
+    return { ok };
   });
 
   // player:getState — get current player state

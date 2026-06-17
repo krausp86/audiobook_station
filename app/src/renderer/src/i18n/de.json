@@ -25,5 +25,19 @@
   "detail.restart": "Von vorne starten",
   "detail.close": "Schließen",
   "badge.inProgress": "Weiterhören",
-  "badge.done": "Fertig"
+  "badge.done": "Fertig",
+  "player.play": "Abspielen",
+  "player.pauseAction": "Pause",
+  "player.prevChapter": "Vorheriges Kapitel",
+  "player.nextChapter": "Nächstes Kapitel",
+  "player.back15": "15 Sekunden zurück",
+  "player.forward30": "30 Sekunden vor",
+  "player.volumeDown": "Leiser",
+  "player.volumeUp": "Lauter",
+  "player.chapter": "Kapitel",
+  "player.noChapters": "Keine Kapitel",
+  "player.openChapters": "Kapitel anzeigen",
+  "player.currentChapter": "Aktuelles Kapitel",
+  "chapters.title": "Kapitel",
+  "chapters.close": "Schließen"
 }

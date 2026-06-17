@@ -50,4 +50,14 @@ export const migrations: Migration[] = [
       db.exec(`INSERT INTO onboarding_seen (id, seen) VALUES (1, 0);`);
     },
   },
+  {
+    version: 3,
+    up: (db) => {
+      // Add last_status column to track whether playback was stopped, paused, or playing.
+      // Default 'paused' preserves resume behavior for existing entries created before this migration.
+      db.exec(`ALTER TABLE playback_position
+               ADD COLUMN last_status TEXT NOT NULL DEFAULT 'paused'
+               CHECK (last_status IN ('playing','paused','stopped'));`);
+    },
+  },
 ];

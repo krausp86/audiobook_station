@@ -23,7 +23,7 @@ interface UseLongPressResult {
   holdRatio: number;
 }
 
-const MOVE_THRESHOLD_PX = 8;
+const MOVE_THRESHOLD_PX = 14; // Increased for better capacitive touch scrolling detection
 
 export function useLongPress({ onLongPress, onTap }: UseLongPressOptions): UseLongPressResult {
   const [holdRatio, setHoldRatio] = useState(0);
