@@ -1,155 +1,177 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Chapter } from '@shared/chapter';
 
-/**
- * Tests for pure clamping/calculation logic in control.ts.
- *
- * Note: Integration tests (actual MPD communication) would require
- * a running MPD instance. Unit tests here focus on calculation logic
- * that can be verified without external dependencies.
- */
+// Module-level mutable state; vi.mock factories close over these at call time.
+let _sendCalls: string[] = [];
+let _sendImpl: (cmd: string) => Promise<Record<string, string>[]> = async () => [];
+let _chaptersResult: Chapter[] = [];
 
-/**
- * Helper: calculate track-relative position from global position for MP3-Ordner.
- * This mirrors the logic used in seek() function.
- */
-function globalToTrackRelative(
-  globalPosition: number,
-  chapters: Array<{ durationSeconds: number }>,
-  targetChapterIdx: number,
-): number {
-  const offsetBefore = chapters
-    .slice(0, targetChapterIdx)
-    .reduce((sum, ch) => sum + ch.durationSeconds, 0);
-  return globalPosition - offsetBefore;
-}
+vi.mock('./index', () => ({
+  getMpd: () =>
+    Promise.resolve({
+      send: async (cmd: string) => {
+        _sendCalls.push(cmd);
+        return _sendImpl(cmd);
+      },
+    }),
+}));
 
-/**
- * Helper: find the chapter index for a global position (mirrors chapterIndexForPosition).
- */
-function findChapterForPosition(
-  chapters: Array<{ startSeconds: number }>,
-  position: number,
-): number | null {
-  if (chapters.length === 0) return null;
-  for (let i = chapters.length - 1; i >= 0; i--) {
-    if (position >= chapters[i].startSeconds) {
-      return i;
-    }
-  }
-  return null;
-}
+vi.mock('./chapters', async (importOriginal) => {
+  const real = await importOriginal<typeof import('./chapters')>();
+  return {
+    ...real,
+    getChapters: async () => _chaptersResult,
+  };
+});
 
-describe('seek logic for MP3-Ordner', () => {
-  const playlistChapters = [
-    { durationSeconds: 300 },  // Track 0: 0–300s
-    { durationSeconds: 400 },  // Track 1: 300–700s
-    { durationSeconds: 500 },  // Track 2: 700–1200s
+import { setVolume, seekRelative, seek } from './control';
+
+// ---------------------------------------------------------------------------
+// setVolume
+// ---------------------------------------------------------------------------
+describe('setVolume', () => {
+  beforeEach(() => {
+    _sendCalls = [];
+    _sendImpl = async () => [];
+  });
+
+  it('clamps volume above 100 to 100', async () => {
+    await setVolume(150);
+    expect(_sendCalls).toContain('setvol 100');
+  });
+
+  it('clamps volume below 0 to 0', async () => {
+    await setVolume(-10);
+    expect(_sendCalls).toContain('setvol 0');
+  });
+
+  it('passes valid volume unchanged', async () => {
+    await setVolume(75);
+    expect(_sendCalls).toContain('setvol 75');
+  });
+
+  it('floors fractional volume', async () => {
+    await setVolume(73.9);
+    expect(_sendCalls).toContain('setvol 73');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// seekRelative
+// ---------------------------------------------------------------------------
+describe('seekRelative', () => {
+  beforeEach(() => {
+    _sendCalls = [];
+    _chaptersResult = [];
+    _sendImpl = async (cmd) => {
+      if (cmd === 'status') return [{ elapsed: '100', duration: '600' }];
+      return [];
+    };
+  });
+
+  it('seeks forward within track bounds', async () => {
+    await seekRelative(50);
+    expect(_sendCalls).toContain('seekcur 150');
+  });
+
+  it('seeks backward within track bounds', async () => {
+    await seekRelative(-30);
+    expect(_sendCalls).toContain('seekcur 70');
+  });
+
+  it('clamps forward seek past track end to track duration', async () => {
+    _sendImpl = async (cmd) => {
+      if (cmd === 'status') return [{ elapsed: '580', duration: '600' }];
+      return [];
+    };
+    await seekRelative(50);
+    expect(_sendCalls).toContain('seekcur 600');
+  });
+
+  it('clamps backward seek before track start to 0', async () => {
+    _sendImpl = async (cmd) => {
+      if (cmd === 'status') return [{ elapsed: '20', duration: '600' }];
+      return [];
+    };
+    await seekRelative(-50);
+    expect(_sendCalls).toContain('seekcur 0');
+  });
+
+  it('does not call currentsong (no chapter roundtrip on hot path)', async () => {
+    await seekRelative(10);
+    expect(_sendCalls).not.toContain('currentsong');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// seek — MP3-Ordner (playlistPos): global position → correct track + offset
+// ---------------------------------------------------------------------------
+describe('seek — MP3-Ordner (playlistPos)', () => {
+  const chapters: Chapter[] = [
+    { index: 0, title: 'Track 1', startSeconds: 0, durationSeconds: 300, navKind: 'playlistPos', playlistPos: 0 },
+    { index: 1, title: 'Track 2', startSeconds: 300, durationSeconds: 400, navKind: 'playlistPos', playlistPos: 1 },
+    { index: 2, title: 'Track 3', startSeconds: 700, durationSeconds: 500, navKind: 'playlistPos', playlistPos: 2 },
   ];
 
-  it('converts global position to track-relative correctly', () => {
-    // Global position 350 (middle of track 1) → track-relative 50
-    const trackRelative = globalToTrackRelative(350, playlistChapters, 1);
-    expect(trackRelative).toBe(50);
+  beforeEach(() => {
+    _sendCalls = [];
+    _chaptersResult = chapters;
+    _sendImpl = async (cmd) => {
+      if (cmd === 'currentsong') return [{ file: 'audiobooks/book/01.mp3' }];
+      return [];
+    };
   });
 
-  it('converts global position at track boundary correctly', () => {
-    // Global position 700 (start of track 2) → track-relative 0
-    const trackRelative = globalToTrackRelative(700, playlistChapters, 2);
-    expect(trackRelative).toBe(0);
+  it('jumps to correct track and track-relative offset for mid-track position', async () => {
+    await seek(350); // global 350 → track 1 (300–700 s), offset 50 s
+    expect(_sendCalls).toContain('play 1');
+    expect(_sendCalls).toContain('seekcur 50');
   });
 
-  it('clamps track-relative position to track bounds', () => {
-    const trackRelative = globalToTrackRelative(350, playlistChapters, 1);
-    const clamped = Math.max(0, Math.min(trackRelative, playlistChapters[1].durationSeconds));
-    expect(clamped).toBe(50);
+  it('jumps to correct track at exact track boundary', async () => {
+    await seek(700); // global 700 → track 2 (start), offset 0 s
+    expect(_sendCalls).toContain('play 2');
+    expect(_sendCalls).toContain('seekcur 0');
   });
 
-  it('clamps position beyond track end to track boundary', () => {
-    // Global position 750 would be in track 2, but let's try it in track 1 bounds
-    const trackRelative = 750 - 300; // 450, but track 1 is only 400s
-    const clamped = Math.max(0, Math.min(trackRelative, playlistChapters[1].durationSeconds));
-    expect(clamped).toBe(400);
-  });
-});
-
-describe('seek target chapter resolution', () => {
-  const chapters = [
-    { startSeconds: 0 },     // Chapter 0
-    { startSeconds: 300 },   // Chapter 1
-    { startSeconds: 700 },   // Chapter 2
-    { startSeconds: 1200 },  // Chapter 3
-  ];
-
-  it('finds correct chapter for start position', () => {
-    expect(findChapterForPosition(chapters, 0)).toBe(0);
+  it('seeks to start of first track for position 0', async () => {
+    await seek(0);
+    expect(_sendCalls).toContain('play 0');
+    expect(_sendCalls).toContain('seekcur 0');
   });
 
-  it('finds correct chapter for middle position', () => {
-    expect(findChapterForPosition(chapters, 350)).toBe(1);
-  });
-
-  it('finds correct chapter at exact boundary', () => {
-    expect(findChapterForPosition(chapters, 700)).toBe(2);
-  });
-
-  it('finds last chapter for position beyond all chapters', () => {
-    expect(findChapterForPosition(chapters, 2000)).toBe(3);
-  });
-
-  it('returns null for empty chapters', () => {
-    expect(findChapterForPosition([], 100)).toBeNull();
-  });
-
-  it('returns null for negative position (edge case)', () => {
-    expect(findChapterForPosition(chapters, -50)).toBeNull();
+  it('clamps negative position to track 0 offset 0', async () => {
+    await seek(-50);
+    expect(_sendCalls).toContain('play 0');
+    expect(_sendCalls).toContain('seekcur 0');
   });
 });
 
-describe('volume clamping', () => {
-  it('clamps positive volume to max 100', () => {
-    const clamped = Math.max(0, Math.min(100, 150));
-    expect(clamped).toBe(100);
+// ---------------------------------------------------------------------------
+// seek — M4B / no chapters: falls through to track-relative seekcur
+// ---------------------------------------------------------------------------
+describe('seek — no chapters (M4B / seekOffset fallback)', () => {
+  beforeEach(() => {
+    _sendCalls = [];
+    _chaptersResult = [];
+    _sendImpl = async (cmd) => {
+      if (cmd === 'currentsong') return [{ file: 'audiobooks/book.m4b' }];
+      return [];
+    };
   });
 
-  it('clamps negative volume to min 0', () => {
-    const clamped = Math.max(0, Math.min(100, -10));
-    expect(clamped).toBe(0);
+  it('sends seekcur with track-relative position', async () => {
+    await seek(350);
+    expect(_sendCalls).toContain('seekcur 350');
   });
 
-  it('keeps valid volume unchanged', () => {
-    const clamped = Math.max(0, Math.min(100, 50));
-    expect(clamped).toBe(50);
-  });
-});
-
-describe('seekRelative within track bounds', () => {
-  const trackDuration = 600;
-
-  it('can seek forward within bounds', () => {
-    const elapsed = 100;
-    const delta = 50;
-    const target = Math.max(0, Math.min(elapsed + delta, trackDuration));
-    expect(target).toBe(150);
+  it('sends seekcur 0 for position 0', async () => {
+    await seek(0);
+    expect(_sendCalls).toContain('seekcur 0');
   });
 
-  it('can seek backward within bounds', () => {
-    const elapsed = 100;
-    const delta = -50;
-    const target = Math.max(0, Math.min(elapsed + delta, trackDuration));
-    expect(target).toBe(50);
-  });
-
-  it('clamps forward seek past track end', () => {
-    const elapsed = 580;
-    const delta = 50;
-    const target = Math.max(0, Math.min(elapsed + delta, trackDuration));
-    expect(target).toBe(trackDuration);
-  });
-
-  it('clamps backward seek before track start', () => {
-    const elapsed = 20;
-    const delta = -50;
-    const target = Math.max(0, Math.min(elapsed + delta, trackDuration));
-    expect(target).toBe(0);
+  it('floors fractional seek position', async () => {
+    await seek(350.9);
+    expect(_sendCalls).toContain('seekcur 350');
   });
 });

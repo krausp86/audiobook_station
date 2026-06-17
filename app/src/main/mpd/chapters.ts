@@ -2,6 +2,8 @@ import { spawn } from 'child_process';
 import type { MpdClient } from './client';
 import type { Chapter } from '@shared/chapter';
 
+const MEDIA_ROOT = '/media';
+
 /**
  * Cache for chapters by media path to avoid repeated ffprobe calls.
  * Invalidated when playlist changes (database or file list updates).
@@ -78,7 +80,7 @@ async function detectAndExtractChapters(
  * @returns array of chapters
  */
 async function extractM4bChapters(relativePath: string): Promise<Chapter[]> {
-  const absolutePath = `/media/${relativePath}`;
+  const absolutePath = `${MEDIA_ROOT}/${relativePath}`;
 
   return new Promise((resolve, reject) => {
     const chapters: Chapter[] = [];
@@ -324,9 +326,12 @@ async function navigateToChapter(chapter: Chapter, mpd: MpdClient): Promise<bool
       const [song] = (await mpd.send('currentsong')) ?? [];
       const currentFile = song?.['file'];
 
-      // chapter.seekFile is absolute (/media/...), MPD song.file is relative.
-      // Normalize by comparing the relative path suffix.
-      const seekFileRelative = chapter.seekFile.replace(/^\/media\//, '');
+      // chapter.seekFile is absolute (MEDIA_ROOT/...), MPD song.file is relative.
+      // Strip the MEDIA_ROOT prefix to get the relative path for comparison.
+      const prefix = MEDIA_ROOT + '/';
+      const seekFileRelative = chapter.seekFile.startsWith(prefix)
+        ? chapter.seekFile.slice(prefix.length)
+        : chapter.seekFile;
       const fileIsLoaded = currentFile && currentFile === seekFileRelative;
 
       if (!fileIsLoaded) {

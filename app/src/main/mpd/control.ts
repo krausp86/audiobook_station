@@ -107,11 +107,8 @@ export async function seek(position: number): Promise<void> {
 
 /**
  * Seek relative to the current position (delta in seconds).
- * Positive delta = forward, negative = backward. Clamped to [0, duration].
- *
- * For MP3-Ordner with playlistPos chapters, the operation is constrained:
- * - Delta is applied only within the current track.
- * - If seeking past track boundary, stays at track end (no auto-advance to next).
+ * Positive delta = forward, negative = backward. Clamped to [0, track duration].
+ * For MP3-Ordner, the seek is constrained to the current track (no auto-advance).
  *
  * @param deltaSeconds amount to seek (positive or negative)
  * @throws Error if MPD command fails
@@ -122,23 +119,9 @@ export async function seekRelative(deltaSeconds: number): Promise<void> {
   const st = status ?? {};
   const elapsed = st['elapsed'] ? parseFloat(st['elapsed']) : 0;
   const durRaw = st['duration'];
-  const trackDuration = durRaw ? parseFloat(durRaw) : elapsed + deltaSeconds; // fallback if no duration
-
-  // Get chapters to check if we're in an MP3-Ordner scenario
-  const [song] = (await mpd.send('currentsong')) ?? [];
-  const currentPath = song?.['file'] ?? null;
-  const chapters = await getChapters(currentPath, mpd);
-
-  if (chapters.length > 0 && chapters[0].navKind === 'playlistPos') {
-    // MP3-Ordner: seekRelative is constrained to current track
-    // (relative seeks don't auto-switch chapters, only absolute seeks do)
-    const target = Math.max(0, Math.min(elapsed + deltaSeconds, trackDuration));
-    await mpd.send(`seekcur ${Math.floor(target)}`);
-  } else {
-    // Single file (M4B, CUE, or no chapters): apply delta across full duration
-    const target = Math.max(0, Math.min(elapsed + deltaSeconds, trackDuration));
-    await mpd.send(`seekcur ${Math.floor(target)}`);
-  }
+  const trackDuration = durRaw ? parseFloat(durRaw) : elapsed + deltaSeconds;
+  const target = Math.max(0, Math.min(elapsed + deltaSeconds, trackDuration));
+  await mpd.send(`seekcur ${Math.floor(target)}`);
 }
 
 /**
@@ -202,9 +185,13 @@ export async function getState(): Promise<PlayerState> {
     const navKind = chapters[0].navKind;
 
     if (navKind === 'playlistPos') {
-      // MP3-Ordner: chapter index from MPD playlist position (st['song']), not elapsed
-      const songIndex = st['song'] ? parseInt(st['song'], 10) : 0;
-      currentChapterIndex = songIndex < chapters.length ? songIndex : null;
+      // MP3-Ordner: chapter index from MPD playlist position (st['song']), not elapsed.
+      // Clamp to valid range so position and duration always share the same reference system.
+      const songIndex = parseInt(st['song'] ?? '0', 10);
+      currentChapterIndex = Math.min(
+        isNaN(songIndex) || songIndex < 0 ? 0 : songIndex,
+        chapters.length - 1,
+      );
 
       // Calculate global position: sum of all previous chapters + current elapsed
       if (currentChapterIndex !== null) {
