@@ -125,7 +125,7 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
       ? playerState.chapters[playerState.currentChapterIndex]
       : null;
 
-  const hasChapters = playerState?.chapters && playerState.chapters.length > 0;
+  const hasChapters = playerState?.chapters && playerState.chapters.length > 1;
 
   const handleChapterGoto = (index: number): void => {
     void window.hoermond.invoke('player:chapterGoto', { index });

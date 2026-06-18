@@ -33,13 +33,32 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
     return { ok: true };
   });
 
-  // player:stop — stop playback and save position
+  // player:stop — stop playback and save position with 'stopped' status
   ipcMain.handle('player:stop', async () => {
+    // Get the current media path BEFORE stopping (stop clears MPD state)
+    const state = await getState();
     await saveNow();
     await stop();
     const db = getDb();
-    const latest = getLatestPosition(db);
-    if (latest) setLastStatus(db, latest.media_path, 'stopped');
+    // Mark as stopped: try current media first, fallback to latest DB record
+    if (state.currentPath) {
+      const parts = state.currentPath.split('/');
+      const top = parts[0];
+      let unitPath: string;
+      if (top === 'music') {
+        const mpd = await getMpd();
+        const [song] = (await mpd.send('currentsong')) ?? [];
+        const albumArtist = song?.['AlbumArtist'] ?? song?.['Artist'] ?? 'Unknown Artist';
+        const album = song?.['Album'] ?? 'Unknown Album';
+        unitPath = `music/${albumArtist}/${album}`;
+      } else {
+        unitPath = parts.slice(0, Math.min(3, parts.length - 1)).join('/') || parts[0];
+      }
+      setLastStatus(db, unitPath, 'stopped');
+    } else {
+      const latest = getLatestPosition(db);
+      if (latest) setLastStatus(db, latest.media_path, 'stopped');
+    }
     return { ok: true };
   });
 
@@ -70,12 +89,21 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
     return { ok };
   });
 
-  // player:chapterPrev — jump to previous chapter
+  // player:chapterPrev — jump to chapter start (if >3s in) or previous chapter
   ipcMain.handle('player:chapterPrev', async () => {
     const state = await getState();
-    if (state.chapters.length === 0) return { ok: false };
     const mpd = await getMpd();
-    const ok = await chapterPrev(state.chapters, state.currentChapterIndex, mpd);
+    // Calculate elapsed time within current chapter
+    let elapsedInChapter = 0;
+    if (state.currentChapterIndex !== null && state.chapters.length > 0) {
+      const ch = state.chapters[state.currentChapterIndex];
+      elapsedInChapter = state.position - ch.startSeconds;
+    } else {
+      // No chapters: use raw position
+      const [st] = await mpd.send('status');
+      elapsedInChapter = st?.['elapsed'] ? parseFloat(st['elapsed']) : 0;
+    }
+    const ok = await chapterPrev(state.chapters, state.currentChapterIndex, elapsedInChapter, mpd);
     return { ok };
   });
 

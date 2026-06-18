@@ -122,13 +122,11 @@ Jetzt die App am Touchscreen durchgehen:
 - [x] ⏩ (30s vor) funktioniert, Audio springt hörbar
 - [x] ⏮ (vorheriges Kapitel) funktioniert
 - [x] ⏭ (nächstes Kapitel) funktioniert
-- [ ] Lautstärke − leiser, Lautstärke + lauter (hörbar)
---> Keine Lautstärke controls sichtbar
+- [x] Lautstärke − leiser, Lautstärke + lauter (hörbar)
 - [x] Drag am Fortschrittsbalken funktioniert per Finger
 - [ ] Swipe-Up auf S5 → S6 Kapitelliste öffnet sich
---> funktioniert nicht
-- [ ] Kapitel-Icon-Button → S6 Kapitelliste öffnet sich
---> Kein Kapitel Icon Button sichtbar
+--> wurde als nicht relevant herausgenommen
+- [x] Kapitel-Icon-Button → S6 Kapitelliste öffnet sich
 - [x] Zurück-Button → zurück zum Grid
 
 ### Bei Touch-Problemen
@@ -143,25 +141,29 @@ Jetzt die App am Touchscreen durchgehen:
 
 ### MP3-Ordner (deine ZIP-Hörbücher)
 
-- [ ] Dateien erscheinen als Kapitel in S6 (Kapitelliste)
-- [ ] Kapitel sind in **korrekter Reihenfolge** (Track-Nummer/Dateiname)
-- [ ] ⏭ wechselt zur nächsten Datei/nächstes Kapitel
+- [x] Dateien erscheinen als Kapitel in S6 (Kapitelliste)
+- [x] Kapitel sind in **korrekter Reihenfolge** (Track-Nummer/Dateiname)
+- [x] ⏭ wechselt zur nächsten Datei/nächstes Kapitel
 - [ ] ⏮ springt zum Kapitelanfang, nochmal ⏮ zum vorherigen Kapitel
-- [ ] Kapitelmarker am Fortschrittsbalken an den richtigen Positionen
-- [ ] Tap auf ein Kapitel in S6 → springt dorthin, Sheet schließt sich
-- [ ] Aktuelles Kapitel ist in S6 hervorgehoben/markiert
+--> Springt sofort zum vorherigen Kapitel
+- [x] Kapitelmarker am Fortschrittsbalken an den richtigen Positionen
+- [x] Tap auf ein Kapitel in S6 → springt dorthin, Sheet schließt sich
+- [x] Aktuelles Kapitel ist in S6 hervorgehoben/markiert
 
 ### Kapitelloses Medium (E12) — falls vorhanden
 
 Eine einzelne MP3-Datei direkt im Audiobook-Ordner:
 
 - [ ] Kein leeres S6-Sheet (Kapitel-Icon ausgeblendet)
+--> Kapitel Button ist immer da, zeigt den einen Song
 - [ ] Swipe-Up hat keine Wirkung
+--> Funktion ist rausgefallen
 - [ ] ⏮ = Track-Anfang
-- [ ] ⏭ = nächster Track (falls vorhanden), sonst keine Wirkung
+--> Button ist Funktionslos
+- [x] ⏭ = nächster Track (falls vorhanden), sonst keine Wirkung
 
 ### M4B / CUE — falls vorhanden (kann nachgereicht werden)
-
+--> Nicht getestet / vorerst nicht relevant
 M4B:
 - [ ] Eingebettete Kapitel erscheinen in S6
 - [ ] ⏮/⏭ navigiert zwischen Kapiteln
@@ -177,16 +179,16 @@ CUE:
 
 Am echten 800×480-Display visuell prüfen:
 
-- [ ] **S5 ohne vertikales Scrollen** — alles passt in den Screen
-- [ ] Cover links ~300px, Steuerung rechts ~440px
-- [ ] Titelleiste 44px: Zurück-Button links, BT/Mond-Platzhalter rechts
-- [ ] Play/Pause-Button ist deutlich größer als die anderen (84×84)
-- [ ] Skip/Seek-Buttons (64×64) gut treffbar mit Kinderfinger
-- [ ] Lautstärke-Buttons (60×60) gut treffbar
-- [ ] Abstände zwischen Buttons ausreichend (≥16px)
-- [ ] Lange Titel werden mit "..." abgeschnitten (kein Umbruch/Overflow)
-- [ ] S6 Kapitelliste: Slide-In-Animation flüssig
-- [ ] S6: aktuelles Kapitel visuell hervorgehoben
+- [x] **S5 ohne vertikales Scrollen** — alles passt in den Screen
+- [x] Cover links ~300px, Steuerung rechts ~440px
+- [x] Titelleiste 44px: Zurück-Button links, BT/Mond-Platzhalter rechts
+- [x] Play/Pause-Button ist deutlich größer als die anderen (84×84)
+- [x] Skip/Seek-Buttons (64×64) gut treffbar mit Kinderfinger
+- [x] Lautstärke-Buttons (60×60) gut treffbar
+- [x] Abstände zwischen Buttons ausreichend (≥16px)
+- [x] Lange Titel werden mit "..." abgeschnitten (kein Umbruch/Overflow)
+- [x] S6 Kapitelliste: Slide-In-Animation flüssig
+- [x] S6: aktuelles Kapitel visuell hervorgehoben
 
 ---
 
@@ -194,12 +196,12 @@ Am echten 800×480-Display visuell prüfen:
 
 ### Seek-Präzision
 
-- [ ] ⏪ drücken, angezeigte Zeit merken → springt **exakt 15s** zurück (±1s)
-- [ ] ⏩ drücken, angezeigte Zeit merken → springt **exakt 30s** vor (±1s)
-- [ ] Am Fortschrittsbalken ziehen: während des Ziehens springt die Wiedergabe
+- [x] ⏪ drücken, angezeigte Zeit merken → springt **exakt 15s** zurück (±1s)
+- [x] ⏩ drücken, angezeigte Zeit merken → springt **exakt 30s** vor (±1s)
+- [x] Am Fortschrittsbalken ziehen: während des Ziehens springt die Wiedergabe
       **NICHT** (nur Vorschau/Tooltip)
-- [ ] Beim Loslassen springt die Wiedergabe zur Tooltip-Zeit
-- [ ] Nach dem Loslassen aktualisiert sich die Zeitanzeige live
+- [x] Beim Loslassen springt die Wiedergabe zur Tooltip-Zeit
+- [x] Nach dem Loslassen aktualisiert sich die Zeitanzeige live
 
 **Erwartetes Verhalten an Kapitelgrenzen (MP3-Ordner):** ⏪ am Kapitelanfang
 clampt auf 0:00 des aktuellen Tracks (springt NICHT ins vorherige Kapitel).
@@ -207,11 +209,11 @@ Das ist bewusst so und kein Bug.
 
 ### Lautstärke
 
-- [ ] Lautstärke + mehrfach drücken → wird hörbar lauter
-- [ ] Lautstärke − mehrfach drücken → wird hörbar leiser
-- [ ] Änderung ist monoton (jeder Schritt lauter/leiser als der vorherige)
-- [ ] Am Maximum (100) und Minimum (0) kein Fehler/Crash
-- [ ] **Kein Lautstärke-Limit** vorhanden (das kommt erst in M5)
+- [x] Lautstärke + mehrfach drücken → wird hörbar lauter
+- [x] Lautstärke − mehrfach drücken → wird hörbar leiser
+- [x] Änderung ist monoton (jeder Schritt lauter/leiser als der vorherige)
+- [x] Am Maximum (100) und Minimum (0) kein Fehler/Crash
+- [x] **Kein Lautstärke-Limit** vorhanden (das kommt erst in M5)
 
 ---
 
@@ -224,8 +226,8 @@ Das ist bewusst so und kein Bug.
 3. **Stecker ziehen** (hart, kein sauberes Herunterfahren)
 4. Wieder einstecken, warten bis die App startet
 
-- [ ] Resume landet im **richtigen Kapitel/Track**
-- [ ] Resume landet an der **richtigen Position** (±10s Toleranz)
+- [x] Resume landet im **richtigen Kapitel/Track**
+- [x] Resume landet an der **richtigen Position** (±10s Toleranz)
 
 Falls M4B/CUE vorhanden, dieselbe Prozedur wiederholen:
 - [ ] M4B: Resume an der richtigen Gesamtposition
@@ -239,6 +241,7 @@ Falls M4B/CUE vorhanden, dieselbe Prozedur wiederholen:
 4. Warten bis die App startet
 
 - [ ] App startet **OHNE** automatische Wiedergabe — Stille, kein Resume
+--> BUG. Wiedergabe startet, kein S5, kein plaing-indikator um zu S5 zu springen
 
 ### Vergleich: Pause vs. Stop
 
@@ -246,7 +249,7 @@ Falls M4B/CUE vorhanden, dieselbe Prozedur wiederholen:
 2. Stecker ziehen, neu starten
 
 - [ ] App resumed und spielt an der pausierten Position weiter
-
+--> finaler Test wenn alles andere behoben ist und overlay wieder aktiviert wurde
 ---
 
 ## Zusammenfassung: Was muss bestanden sein?

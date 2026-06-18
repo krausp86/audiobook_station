@@ -280,15 +280,29 @@ export async function chapterNext(
 export async function chapterPrev(
   chapters: Chapter[],
   currentIndex: number | null,
+  elapsedInChapter: number,
   mpd: MpdClient,
 ): Promise<boolean> {
-  if (chapters.length === 0) return false;
+  // No chapters or single file: seek to track beginning
+  if (chapters.length <= 1) {
+    await mpd.send('seekcur 0');
+    return true;
+  }
 
-  const idx = currentIndex === null ? 0 : currentIndex - 1;
-  if (idx < 0) return false;
+  const idx = currentIndex ?? 0;
 
-  const chapter = chapters[idx];
-  return navigateToChapter(chapter, mpd);
+  // If >3s into current chapter, jump to its start first
+  if (elapsedInChapter > 3) {
+    return navigateToChapter(chapters[idx], mpd);
+  }
+
+  // Already at beginning of first chapter: seek to 0
+  if (idx <= 0) {
+    await mpd.send('seekcur 0');
+    return true;
+  }
+
+  return navigateToChapter(chapters[idx - 1], mpd);
 }
 
 /**
