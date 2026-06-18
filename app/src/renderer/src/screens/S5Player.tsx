@@ -236,6 +236,7 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
             <PlayerControls
               status={playerState?.status ?? 'stopped'}
               volume={playerState?.volume ?? null}
+              hasChapters={!!hasChapters}
               onPlayPause={handlePlayPause}
               onPrevChapter={handlePrevChapter}
               onNextChapter={handleNextChapter}
@@ -243,6 +244,7 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
               onForward30={handleForward30}
               onVolumeDown={handleVolumeDown}
               onVolumeUp={handleVolumeUp}
+              onOpenChapters={() => setChaptersOpen(true)}
             />
           </div>
         </div>

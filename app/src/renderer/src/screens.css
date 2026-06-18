@@ -386,15 +386,18 @@
   flex: 1;
 }
 
-.player-controls-row {
+.player-controls-main {
   display: flex;
   gap: var(--space-2);
   align-items: center;
   justify-content: center;
 }
 
-.player-controls-row-play {
-  gap: var(--space-3);
+.player-controls-secondary {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: center;
 }
 
 .player-btn {
@@ -403,7 +406,7 @@
   justify-content: center;
   background: transparent;
   border: none;
-  color: var(--text-on-flieder);
+  color: var(--text-primary);
   cursor: none;
   padding: 0;
   border-radius: 12px;
@@ -416,31 +419,22 @@
   color: var(--text-on-deep);
 }
 
-.player-btn-prev-chapter,
-.player-btn-next-chapter {
+.player-btn-64 {
   width: 64px;
   height: 64px;
-  color: var(--text-primary);
 }
 
-.player-btn-back15,
-.player-btn-forward30 {
-  width: 64px;
-  height: 64px;
-  color: var(--text-primary);
-}
-
-.player-btn-volume-down,
-.player-btn-volume-up {
+.player-btn-60 {
   width: 60px;
   height: 60px;
-  color: var(--text-primary);
 }
 
-.player-btn-volume-down:disabled,
-.player-btn-volume-up:disabled {
+.player-btn-chapters {
+  margin-left: var(--space-2);
+}
+
+.player-btn[aria-disabled="true"] {
   opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* S5 Player Screen */

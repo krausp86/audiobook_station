@@ -1,134 +1,24 @@
 import { useT } from '../i18n/I18nContext';
 import Pressable from './Pressable';
 
-/**
- * PlayerControls component: buttons for playback control.
- *
- * Layout (centered, min 16px gap):
- * - Top row: Play/Pause (84×84, centered)
- * - Middle rows: ⏮ ⏭ (64×64) | ⏪ ⏩ (64×64)
- * - Bottom row: − (60×60) | + (60×60)
- *
- * All buttons use inline SVG with visually-hidden labels (a11y).
- * Press feedback from <Pressable>.
- */
 interface PlayerControlsProps {
-  /** Current playback status (determines play/pause icon) */
   status: 'playing' | 'paused' | 'stopped';
-
-  /** Current volume level (0–100), or null if unavailable */
   volume: number | null;
-
-  /** Called when play/pause button is tapped */
+  hasChapters: boolean;
   onPlayPause: () => void;
-
-  /** Called when previous-chapter button is tapped */
   onPrevChapter: () => void;
-
-  /** Called when next-chapter button is tapped */
   onNextChapter: () => void;
-
-  /** Called when back-15s button is tapped */
   onBack15: () => void;
-
-  /** Called when forward-30s button is tapped */
   onForward30: () => void;
-
-  /** Called when volume-down button is tapped */
   onVolumeDown: () => void;
-
-  /** Called when volume-up button is tapped */
   onVolumeUp: () => void;
-}
-
-/**
- * Play/Pause icon: toggles between play (▶) and pause (║ ║) symbols.
- */
-function PlayPauseIcon({ isPlaying }: { isPlaying: boolean }): React.JSX.Element {
-  if (isPlaying) {
-    // Pause icon (two vertical bars)
-    return (
-      <svg viewBox="0 0 24 24" width="40" height="40" fill="currentColor">
-        <rect x="6" y="4" width="3" height="16" />
-        <rect x="15" y="4" width="3" height="16" />
-      </svg>
-    );
-  }
-  // Play icon (right-pointing triangle)
-  return (
-    <svg viewBox="0 0 24 24" width="40" height="40" fill="currentColor">
-      <polygon points="5,4 5,20 19,12" />
-    </svg>
-  );
-}
-
-/**
- * Minimal SVG icons for chapter and seek buttons.
- */
-function SkipPrevIcon(): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
-      {/* Backward arrow symbol */}
-      <polygon points="8,12 12,8 12,11 18,11 18,13 12,13 12,16" />
-    </svg>
-  );
-}
-
-function SkipNextIcon(): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
-      {/* Forward arrow symbol */}
-      <polygon points="16,12 12,8 12,11 6,11 6,13 12,13 12,16" />
-    </svg>
-  );
-}
-
-function SeekBackIcon(): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
-      {/* Rewind / -15s indicator */}
-      <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fontSize="14" fontWeight="bold">
-        15
-      </text>
-    </svg>
-  );
-}
-
-function SeekForwardIcon(): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
-      {/* Forward / +30s indicator */}
-      <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fontSize="14" fontWeight="bold">
-        30
-      </text>
-    </svg>
-  );
-}
-
-function VolumeDownIcon(): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-      {/* Speaker symbol with minus */}
-      <path d="M3,9v6h4l5,5V4l-5,5H3z M15,12c0-1.66-1.34-3-3-3v2c.55,0,1,.45,1,1s-.45,1-1,1v2c1.66,0,3-1.34,3-3z" />
-      <line x1="22" y1="12" x2="16" y2="12" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  );
-}
-
-function VolumeUpIcon(): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-      {/* Speaker symbol with plus */}
-      <path d="M3,9v6h4l5,5V4l-5,5H3z M15,12c0-1.66-1.34-3-3-3v2c.55,0,1,.45,1,1s-.45,1-1,1v2c1.66,0,3-1.34,3-3z" />
-      <line x1="22" y1="12" x2="16" y2="12" stroke="currentColor" strokeWidth="2" />
-      <line x1="19" y1="9" x2="19" y2="15" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  );
+  onOpenChapters: () => void;
 }
 
 export default function PlayerControls({
   status,
   volume,
+  hasChapters,
   onPlayPause,
   onPrevChapter,
   onNextChapter,
@@ -136,77 +26,118 @@ export default function PlayerControls({
   onForward30,
   onVolumeDown,
   onVolumeUp,
+  onOpenChapters,
 }: PlayerControlsProps): React.JSX.Element {
   const t = useT();
   const isPlaying = status === 'playing';
 
   return (
     <div className="player-controls">
-      {/* Play/Pause button — large, centered */}
-      <div className="player-controls-row player-controls-row-play">
+      {/* Main row: ⏮ ⏪ ▶/⏸ ⏩ ⏭ */}
+      <div className="player-controls-main">
+        <Pressable
+          className="player-btn player-btn-64"
+          onTap={onPrevChapter}
+          ariaLabel={t('player.prevChapter')}
+        >
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+            <rect x="4" y="5" width="3" height="14" />
+            <polygon points="20,5 10,12 20,19" />
+          </svg>
+        </Pressable>
+
+        <Pressable
+          className="player-btn player-btn-64"
+          onTap={onBack15}
+          ariaLabel={t('player.back15')}
+        >
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+            <path d="M12,5V1L7,6l5,5V7c3.31,0,6,2.69,6,6s-2.69,6-6,6-6-2.69-6-6H4c0,4.42,3.58,8,8,8s8-3.58,8-8-3.58-8-8-8z" />
+            <text x="12" y="14.5" textAnchor="middle" fontSize="7" fontWeight="bold">15</text>
+          </svg>
+        </Pressable>
+
         <Pressable
           className="player-btn player-btn-play-pause"
           onTap={onPlayPause}
           ariaLabel={isPlaying ? t('player.pauseAction') : t('player.play')}
         >
-          <PlayPauseIcon isPlaying={isPlaying} />
+          {isPlaying ? (
+            <svg viewBox="0 0 24 24" width="40" height="40" fill="currentColor">
+              <rect x="6" y="4" width="3" height="16" />
+              <rect x="15" y="4" width="3" height="16" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" width="40" height="40" fill="currentColor">
+              <polygon points="5,4 5,20 19,12" />
+            </svg>
+          )}
         </Pressable>
-      </div>
 
-      {/* Chapter navigation buttons */}
-      <div className="player-controls-row player-controls-row-chapters">
         <Pressable
-          className="player-btn player-btn-prev-chapter"
-          onTap={onPrevChapter}
-          ariaLabel={t('player.prevChapter')}
-        >
-          <SkipPrevIcon />
-        </Pressable>
-        <Pressable
-          className="player-btn player-btn-next-chapter"
-          onTap={onNextChapter}
-          ariaLabel={t('player.nextChapter')}
-        >
-          <SkipNextIcon />
-        </Pressable>
-      </div>
-
-      {/* Seek buttons */}
-      <div className="player-controls-row player-controls-row-seek">
-        <Pressable
-          className="player-btn player-btn-back15"
-          onTap={onBack15}
-          ariaLabel={t('player.back15')}
-        >
-          <SeekBackIcon />
-        </Pressable>
-        <Pressable
-          className="player-btn player-btn-forward30"
+          className="player-btn player-btn-64"
           onTap={onForward30}
           ariaLabel={t('player.forward30')}
         >
-          <SeekForwardIcon />
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+            <path d="M12,5V1l5,5-5,5V7c-3.31,0-6,2.69-6,6s2.69,6,6,6,6-2.69,6-6h2c0,4.42-3.58,8-8,8s-8-3.58-8-8,3.58-8,8-8z" />
+            <text x="12" y="14.5" textAnchor="middle" fontSize="7" fontWeight="bold">30</text>
+          </svg>
+        </Pressable>
+
+        <Pressable
+          className="player-btn player-btn-64"
+          onTap={onNextChapter}
+          ariaLabel={t('player.nextChapter')}
+        >
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+            <polygon points="4,5 14,12 4,19" />
+            <rect x="17" y="5" width="3" height="14" />
+          </svg>
         </Pressable>
       </div>
 
-      {/* Volume buttons */}
-      <div className="player-controls-row player-controls-row-volume">
+      {/* Bottom row: Vol- Vol+ | Chapters button */}
+      <div className="player-controls-secondary">
         <Pressable
-          className="player-btn player-btn-volume-down"
+          className="player-btn player-btn-60"
           onTap={onVolumeDown}
           disabled={volume === null}
           ariaLabel={t('player.volumeDown')}
         >
-          <VolumeDownIcon />
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M3,9v6h4l5,5V4l-5,5H3z" />
+            <line x1="20" y1="12" x2="15" y2="12" stroke="currentColor" strokeWidth="2.5" />
+          </svg>
         </Pressable>
+
         <Pressable
-          className="player-btn player-btn-volume-up"
+          className="player-btn player-btn-60"
           onTap={onVolumeUp}
           disabled={volume === null}
           ariaLabel={t('player.volumeUp')}
         >
-          <VolumeUpIcon />
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M3,9v6h4l5,5V4l-5,5H3z" />
+            <line x1="20" y1="12" x2="15" y2="12" stroke="currentColor" strokeWidth="2.5" />
+            <line x1="17.5" y1="9" x2="17.5" y2="15" stroke="currentColor" strokeWidth="2.5" />
+          </svg>
         </Pressable>
+
+        {hasChapters && (
+          <Pressable
+            className="player-btn player-btn-60 player-btn-chapters"
+            onTap={onOpenChapters}
+            ariaLabel={t('player.openChapters')}
+          >
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+              <rect x="3" y="4" width="14" height="2.5" rx="1" />
+              <rect x="3" y="10.5" width="14" height="2.5" rx="1" />
+              <rect x="3" y="17" width="14" height="2.5" rx="1" />
+              <circle cx="20" cy="5.25" r="2" fill="var(--flieder-deep)" />
+            </svg>
+          </Pressable>
+        )}
       </div>
     </div>
   );

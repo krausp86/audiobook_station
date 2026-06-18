@@ -14,6 +14,7 @@ which ffprobe
 
 # MPD-Version notieren (Abgleich mit Laptop-Spike)
 mpd --version | head -3
+--> 0.24.4
 
 # Media-Unterordner beschreibbar? (Root von /mnt/hoermond gehört root, das ist OK)
 touch /mnt/hoermond/audiobooks/test && rm /mnt/hoermond/audiobooks/test && echo "OK"
@@ -110,21 +111,25 @@ sudo journalctl -u mediaplayer.service -n 50 --no-pager
 
 Jetzt die App am Touchscreen durchgehen:
 
-- [ ] App startet im Kiosk (kein Cursor, kein Fensterrahmen)
-- [ ] S0 (Willkommen) → Tap → S1 (Startscreen)
-- [ ] S1 → Tap auf Hörbücher/Musik → Grid
-- [ ] Grid → Tap auf Kachel → **S5 Player öffnet sich**
-- [ ] Audio ist hörbar über Klinke/Lautsprecher
-- [ ] Play/Pause-Button funktioniert per Tap
-- [ ] ⏪ (15s zurück) funktioniert, Audio springt hörbar
-- [ ] ⏩ (30s vor) funktioniert, Audio springt hörbar
-- [ ] ⏮ (vorheriges Kapitel) funktioniert
-- [ ] ⏭ (nächstes Kapitel) funktioniert
+- [x] App startet im Kiosk (kein Cursor, kein Fensterrahmen)
+- [x] S0 (Willkommen) → Tap → S1 (Startscreen)
+--> lange nicht mehr gesehen, nicht zwingend notwendig
+- [x] S1 → Tap auf Hörbücher/Musik → Grid
+- [x] Grid → Tap auf Kachel → **S5 Player öffnet sich**
+- [x] Audio ist hörbar über Klinke/Lautsprecher
+- [x] Play/Pause-Button funktioniert per Tap
+- [x] ⏪ (15s zurück) funktioniert, Audio springt hörbar
+- [x] ⏩ (30s vor) funktioniert, Audio springt hörbar
+- [x] ⏮ (vorheriges Kapitel) funktioniert
+- [x] ⏭ (nächstes Kapitel) funktioniert
 - [ ] Lautstärke − leiser, Lautstärke + lauter (hörbar)
-- [ ] Drag am Fortschrittsbalken funktioniert per Finger
+--> Keine Lautstärke controls sichtbar
+- [x] Drag am Fortschrittsbalken funktioniert per Finger
 - [ ] Swipe-Up auf S5 → S6 Kapitelliste öffnet sich
+--> funktioniert nicht
 - [ ] Kapitel-Icon-Button → S6 Kapitelliste öffnet sich
-- [ ] Zurück-Button → zurück zum Grid
+--> Kein Kapitel Icon Button sichtbar
+- [x] Zurück-Button → zurück zum Grid
 
 ### Bei Touch-Problemen
 
