@@ -12,6 +12,8 @@ import type { PlayerState } from '@shared/ipc-contract';
 export async function play(path: string, position?: number): Promise<void> {
   const mpd = await getMpd();
   await mpd.send('clear');
+  await mpd.send('repeat 0');
+  await mpd.send('single 0');
 
   const segments = path.split('/');
   if (segments[0] === 'music' && segments.length >= 3) {
