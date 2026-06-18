@@ -39,6 +39,20 @@ export default function Root(): React.JSX.Element {
     return () => off();
   }, []);
 
+  // 3) Auto-navigate to S5 if resume started playback before renderer loaded
+  const [resumeChecked, setResumeChecked] = useState(false);
+  useEffect(() => {
+    if (resumeChecked || !lib) return;
+    setResumeChecked(true);
+    void window.hoermond.invoke('player:getState', undefined).then((state) => {
+      if (state.status !== 'playing' || !state.currentPath) return;
+      const match = [...lib.recentlyPlayed, ...lib.all].find(
+        (m) => m.path === state.currentPath,
+      );
+      if (match) setScreen({ name: 's5', item: match });
+    });
+  }, [lib, resumeChecked]);
+
   // S0 done -> set flag + go to S1
   const finishOnboarding = (): void => {
     void window.hoermond.invoke('onboarding:setSeen', { seen: true });
