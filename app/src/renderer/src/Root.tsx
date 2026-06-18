@@ -52,9 +52,12 @@ export default function Root(): React.JSX.Element {
     if (!lib || !playerState?.currentPath) return null;
     if (playerState.status === 'stopped') return null;
     const cp = playerState.currentPath;
-    return [...lib.recentlyPlayed, ...lib.all].find(
+    const matches = [...lib.recentlyPlayed, ...lib.all].filter(
       (m) => cp === m.path || cp.startsWith(m.path + '/'),
-    ) ?? null;
+    );
+    if (matches.length === 0) return null;
+    // Pick the most specific match (longest path) to avoid broad matches like "audiobooks"
+    return matches.reduce((best, m) => m.path.length > best.path.length ? m : best);
   }, [lib, playerState?.currentPath, playerState?.status]);
 
   // 4) Auto-navigate to S5 on startup if resume started playback

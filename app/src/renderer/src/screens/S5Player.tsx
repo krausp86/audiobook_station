@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, type PointerEvent } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useT } from '../i18n/I18nContext';
 import ProgressBar from '../components/ProgressBar';
 import PlayerControls from '../components/PlayerControls';
@@ -31,7 +31,6 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
   const t = useT();
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
   const [chaptersOpen, setChaptersOpen] = useState(false);
-  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
 
   // Load initial player state and subscribe to updates
   useEffect(() => {
@@ -128,33 +127,12 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
 
   const hasChapters = playerState?.chapters && playerState.chapters.length > 0;
 
-  // Swipe-up gesture detection (on background, not on controls)
-  const handlePointerDown = (e: PointerEvent<HTMLDivElement>): void => {
-    pointerStartRef.current = { x: e.clientX, y: e.clientY };
-  };
-
-  const handlePointerUp = (e: PointerEvent<HTMLDivElement>): void => {
-    if (!pointerStartRef.current || !hasChapters || chaptersOpen) return;
-    const deltaX = e.clientX - pointerStartRef.current.x;
-    const deltaY = e.clientY - pointerStartRef.current.y;
-    pointerStartRef.current = null;
-
-    // Swipe-up: deltaY < -60px and |dy| > |dx|
-    if (deltaY < -60 && Math.abs(deltaY) > Math.abs(deltaX)) {
-      setChaptersOpen(true);
-    }
-  };
-
   const handleChapterGoto = (index: number): void => {
     void window.hoermond.invoke('player:chapterGoto', { index });
   };
 
   return (
-    <div
-      className="s5-player"
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
-    >
+    <div className="s5-player">
       {/* Titlebar */}
       <div className="s5-titlebar">
         <div className="s5-titlebar-left">

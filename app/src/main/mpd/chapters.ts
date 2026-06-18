@@ -192,7 +192,12 @@ async function extractPlaylistChapters(mpd: MpdClient): Promise<Chapter[]> {
     const chapters: Chapter[] = [];
     let cumulativeSeconds = 0;
 
-    playlistInfo.forEach((entry, idx) => {
+    // Filter to entries with a 'file' key — the MPD parser splits records on
+    // duplicate metadata keys (e.g. multiple Artist tags), which can create
+    // phantom entries without 'file' that carry partial duration data.
+    const tracks = playlistInfo.filter((entry) => 'file' in entry);
+
+    tracks.forEach((entry, idx) => {
       const title = entry['Title'] || entry['file'] || `Spur ${idx + 1}`;
       const durationStr = entry['duration'] ?? entry['Time'];
       const duration = durationStr ? Math.round(parseFloat(durationStr)) : 0;
@@ -203,7 +208,7 @@ async function extractPlaylistChapters(mpd: MpdClient): Promise<Chapter[]> {
         startSeconds: cumulativeSeconds,
         durationSeconds: duration,
         navKind: 'playlistPos',
-        playlistPos: idx,
+        playlistPos: parseInt(entry['Pos'] ?? String(idx), 10),
       });
 
       cumulativeSeconds += duration;

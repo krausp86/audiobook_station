@@ -97,7 +97,7 @@ export default function PlayerControls({
         </Pressable>
       </div>
 
-      {/* Bottom row: Vol- Vol+ | Chapters button */}
+      {/* Bottom row: Vol- [level] Vol+ | Chapters button */}
       <div className="player-controls-secondary">
         <Pressable
           className="player-btn player-btn-60"
@@ -110,6 +110,10 @@ export default function PlayerControls({
             <line x1="20" y1="12" x2="15" y2="12" stroke="currentColor" strokeWidth="2.5" />
           </svg>
         </Pressable>
+
+        {volume !== null && (
+          <span className="player-volume-label t-tiny">{volume}%</span>
+        )}
 
         <Pressable
           className="player-btn player-btn-60"

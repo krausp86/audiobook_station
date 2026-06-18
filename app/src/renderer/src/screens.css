@@ -437,6 +437,12 @@
   opacity: 0.5;
 }
 
+.player-volume-label {
+  color: var(--text-secondary);
+  min-width: 40px;
+  text-align: center;
+}
+
 /* S5 Player Screen */
 .s5-player {
   width: 800px;
