@@ -46,7 +46,9 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
   const playRequestedRef = useRef(false);
   useEffect(() => {
     if (!playerState) return;
-    if (playerState.currentPath === item.path) {
+    if (playerState.currentPath &&
+        (playerState.currentPath === item.path ||
+         playerState.currentPath.startsWith(item.path + '/'))) {
       playRequestedRef.current = false;
       return;
     }

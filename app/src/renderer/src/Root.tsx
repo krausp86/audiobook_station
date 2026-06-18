@@ -46,8 +46,9 @@ export default function Root(): React.JSX.Element {
     setResumeChecked(true);
     void window.hoermond.invoke('player:getState', undefined).then((state) => {
       if (state.status !== 'playing' || !state.currentPath) return;
+      const cp = state.currentPath!;
       const match = [...lib.recentlyPlayed, ...lib.all].find(
-        (m) => m.path === state.currentPath,
+        (m) => cp === m.path || cp.startsWith(m.path + '/'),
       );
       if (match) setScreen({ name: 's5', item: match });
     });
