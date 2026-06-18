@@ -212,9 +212,27 @@ export async function getState(): Promise<PlayerState> {
     }
   }
 
+  // Compute unit path matching MediaItem.path (same grouping logic as listLibrary)
+  let currentUnitPath: string | null = null;
+  if (currentPath) {
+    const parts = currentPath.split('/');
+    const top = parts[0];
+    if (top === 'music') {
+      const albumArtist = song?.['AlbumArtist'] ?? song?.['Artist'] ?? 'Unknown Artist';
+      const album = song?.['Album'] ?? 'Unknown Album';
+      currentUnitPath = `music/${albumArtist}/${album}`;
+    } else {
+      currentUnitPath = parts.slice(0, Math.min(3, parts.length - 1)).join('/') || parts[0];
+      if (!currentUnitPath.includes('/')) {
+        currentUnitPath = currentPath;
+      }
+    }
+  }
+
   return {
     status: statusMap[mpdState as keyof typeof statusMap] ?? 'stopped',
     currentPath,
+    currentUnitPath,
     position: globalPosition,
     duration: totalDuration,
     volume,

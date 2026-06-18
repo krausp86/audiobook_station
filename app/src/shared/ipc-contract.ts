@@ -22,11 +22,12 @@ export interface LibraryListResponse {
 /** Current player state snapshot. */
 export interface PlayerState {
   status: 'playing' | 'paused' | 'stopped';
-  currentPath: string | null;  // relativer Pfad zu /media oder null
-  position: number;            // Sekunden, relativ zum gesamten Medium
-  duration: number | null;     // Sekunden oder null
-  volume: number | null;       // 0–100, or null if no mixer available
-  chapters: Chapter[];         // empty array if media has no chapters (E12)
+  currentPath: string | null;      // relativer Dateipfad in MPD (z.B. audiobooks/Author/Title/01.mp3)
+  currentUnitPath: string | null;  // gruppierter Unit-Pfad passend zu MediaItem.path
+  position: number;                // Sekunden, relativ zum gesamten Medium
+  duration: number | null;         // Sekunden oder null
+  volume: number | null;           // 0–100, or null if no mixer available
+  chapters: Chapter[];             // empty array if media has no chapters (E12)
   currentChapterIndex: number | null; // index into chapters array, or null if no chapters
 }
 

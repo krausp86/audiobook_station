@@ -47,6 +47,11 @@ export async function listLibrary(): Promise<LibraryListResponse> {
       unitPath = `music/${albumArtist}/${album}`;
     } else {
       unitPath = parts.slice(0, Math.min(3, parts.length - 1)).join('/') || parts[0];
+      // Files directly in the top-level dir (e.g. audiobooks/track.mp3) would get
+      // unitPath = "audiobooks" — a confusing catch-all tile. Treat each as its own unit.
+      if (!unitPath.includes('/')) {
+        unitPath = file;
+      }
     }
 
     // Accumulate durations
@@ -55,10 +60,16 @@ export async function listLibrary(): Promise<LibraryListResponse> {
     if (entry) {
       entry.durations += dur;
     } else {
+      const title = f['Album']
+        ?? (parts.length > 2 ? parts[parts.length - 2] : null)
+        ?? f['Title']
+        ?? parts[parts.length - 1]?.replace(/\.[^.]+$/, '')
+        ?? unitPath;
+
       units.set(unitPath, {
         durations: dur,
         type,
-        title: f['Album'] ?? parts[parts.length - 2] ?? unitPath,
+        title,
         artist: f['AlbumArtist'] ?? f['Artist'],
       });
     }

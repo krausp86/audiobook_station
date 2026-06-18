@@ -45,9 +45,7 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
   const playRequestedRef = useRef(false);
   useEffect(() => {
     if (!playerState) return;
-    if (playerState.currentPath &&
-        (playerState.currentPath === item.path ||
-         playerState.currentPath.startsWith(item.path + '/'))) {
+    if (playerState.currentUnitPath === item.path) {
       playRequestedRef.current = false;
       return;
     }
@@ -189,13 +187,13 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
         <div className="s5-controls-column">
           <div className="s5-metadata">
             <h2 className="s5-title">{item.title}</h2>
+            {item.artist && (
+              <p className="s5-artist">{item.artist}</p>
+            )}
             {currentChapter && (
               <p className="s5-chapter-label">
                 {currentChapter.title}
               </p>
-            )}
-            {!currentChapter && playerState?.chapters && playerState.chapters.length > 0 && (
-              <p className="s5-chapter-label">{t('player.noChapters')}</p>
             )}
           </div>
 

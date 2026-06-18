@@ -537,6 +537,16 @@
   text-overflow: ellipsis;
 }
 
+.s5-artist {
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin: 0 0 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .s5-chapter-label {
   font-size: 20px;
   font-weight: 600;
