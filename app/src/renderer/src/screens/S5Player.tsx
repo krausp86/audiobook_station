@@ -40,16 +40,42 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
     return () => off();
   }, []);
 
-  // Auto-play on mount if not already playing this item
+  // Auto-play on mount if not already playing this item.
+  // Uses a ref to prevent re-triggering during transient null states
+  // (play() does clear → add → play, and the clear triggers an idle push with currentPath=null).
+  const playRequestedRef = useRef(false);
   useEffect(() => {
     if (!playerState) return;
     if (playerState.currentPath === item.path) {
-      // Already playing this item, do not restart
+      playRequestedRef.current = false;
       return;
     }
-    // Start playback
+    if (playRequestedRef.current) return;
+    playRequestedRef.current = true;
     void window.hoermond.invoke('player:play', { path: item.path });
   }, [item.path, playerState?.currentPath]);
+
+  // Client-side position interpolation: MPD idle only fires on state changes,
+  // not during continuous playback, so we increment locally every second.
+  const [localPosition, setLocalPosition] = useState(0);
+  const serverPositionRef = useRef(0);
+  const serverSyncRef = useRef(Date.now());
+
+  useEffect(() => {
+    if (!playerState) return;
+    serverPositionRef.current = playerState.position;
+    serverSyncRef.current = Date.now();
+    setLocalPosition(playerState.position);
+  }, [playerState]);
+
+  useEffect(() => {
+    if (playerState?.status !== 'playing') return;
+    const id = setInterval(() => {
+      const elapsed = (Date.now() - serverSyncRef.current) / 1000;
+      setLocalPosition(serverPositionRef.current + elapsed);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [playerState?.status]);
 
   const isPlaying = playerState?.status === 'playing';
 
@@ -194,32 +220,28 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
           </div>
 
           {/* Progress bar */}
-          {playerState && (
-            <div className="s5-progress">
-              <ProgressBar
-                position={playerState.position}
-                duration={playerState.duration}
-                chapters={playerState.chapters}
-                onSeekCommit={handleSeekCommit}
-              />
-            </div>
-          )}
+          <div className="s5-progress">
+            <ProgressBar
+              position={localPosition}
+              duration={playerState?.duration ?? null}
+              chapters={playerState?.chapters ?? []}
+              onSeekCommit={handleSeekCommit}
+            />
+          </div>
 
           {/* Controls */}
           <div className="s5-controls">
-            {playerState && (
-              <PlayerControls
-                status={playerState.status}
-                volume={playerState.volume}
-                onPlayPause={handlePlayPause}
-                onPrevChapter={handlePrevChapter}
-                onNextChapter={handleNextChapter}
-                onBack15={handleBack15}
-                onForward30={handleForward30}
-                onVolumeDown={handleVolumeDown}
-                onVolumeUp={handleVolumeUp}
-              />
-            )}
+            <PlayerControls
+              status={playerState?.status ?? 'stopped'}
+              volume={playerState?.volume ?? null}
+              onPlayPause={handlePlayPause}
+              onPrevChapter={handlePrevChapter}
+              onNextChapter={handleNextChapter}
+              onBack15={handleBack15}
+              onForward30={handleForward30}
+              onVolumeDown={handleVolumeDown}
+              onVolumeUp={handleVolumeUp}
+            />
           </div>
         </div>
       </div>
