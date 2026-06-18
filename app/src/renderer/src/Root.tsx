@@ -1,10 +1,11 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import S0Welcome from './screens/S0Welcome';
 import S1Start from './screens/S1Start';
 import LibraryGrid from './screens/LibraryGrid';
 import S4Detail from './screens/S4Detail';
 import S5Player from './screens/S5Player';
-import type { LibraryListResponse, MediaItem } from '@shared/ipc-contract';
+import MiniPlayer from './components/MiniPlayer';
+import type { LibraryListResponse, MediaItem, PlayerState } from '@shared/ipc-contract';
 
 type Screen =
   | { name: 's0' }
@@ -39,20 +40,35 @@ export default function Root(): React.JSX.Element {
     return () => off();
   }, []);
 
-  // 3) Auto-navigate to S5 if resume started playback before renderer loaded
-  const [resumeChecked, setResumeChecked] = useState(false);
+  // 3) Track player state for MiniPlayer + auto-navigate
+  const [playerState, setPlayerState] = useState<PlayerState | null>(null);
   useEffect(() => {
-    if (resumeChecked || !lib) return;
-    setResumeChecked(true);
-    void window.hoermond.invoke('player:getState', undefined).then((state) => {
-      if (state.status !== 'playing' || !state.currentPath) return;
-      const cp = state.currentPath!;
-      const match = [...lib.recentlyPlayed, ...lib.all].find(
-        (m) => cp === m.path || cp.startsWith(m.path + '/'),
-      );
-      if (match) setScreen({ name: 's5', item: match });
-    });
-  }, [lib, resumeChecked]);
+    void window.hoermond.invoke('player:getState', undefined).then(setPlayerState);
+    const off = window.hoermond.on('player:state', setPlayerState);
+    return () => off();
+  }, []);
+
+  const playingItem = useMemo<MediaItem | null>(() => {
+    if (!lib || !playerState?.currentPath) return null;
+    if (playerState.status === 'stopped') return null;
+    const cp = playerState.currentPath;
+    return [...lib.recentlyPlayed, ...lib.all].find(
+      (m) => cp === m.path || cp.startsWith(m.path + '/'),
+    ) ?? null;
+  }, [lib, playerState?.currentPath, playerState?.status]);
+
+  // 4) Auto-navigate to S5 on startup if resume started playback
+  const resumeDoneRef = useRef(false);
+  useEffect(() => {
+    if (resumeDoneRef.current) return;
+    if (!playingItem) return;
+    if (screen?.name !== 's1') {
+      resumeDoneRef.current = true;
+      return;
+    }
+    resumeDoneRef.current = true;
+    setScreen({ name: 's5', item: playingItem });
+  }, [playingItem, screen]);
 
   // S0 done -> set flag + go to S1
   const finishOnboarding = (): void => {
@@ -100,6 +116,25 @@ export default function Root(): React.JSX.Element {
           onBack={() =>
             setScreen({ name: 'grid', type: screen.item.type })
           }
+        />
+      )}
+
+      {/* MiniPlayer: shown on S1/Grid when something is playing */}
+      {playingItem && screen?.name !== 's5' && screen?.name !== 's0' && (
+        <MiniPlayer
+          title={playingItem.title}
+          status={playerState!.status}
+          onPlayPause={() => {
+            if (playerState?.status === 'playing') {
+              void window.hoermond.invoke('player:pause', undefined);
+            } else {
+              void window.hoermond.invoke('player:play', { path: playingItem.path });
+            }
+          }}
+          onStop={() => {
+            void window.hoermond.invoke('player:stop', undefined);
+          }}
+          onOpen={() => setScreen({ name: 's5', item: playingItem })}
         />
       )}
 

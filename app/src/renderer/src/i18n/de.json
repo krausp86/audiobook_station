@@ -39,5 +39,6 @@
   "player.openChapters": "Kapitel anzeigen",
   "player.currentChapter": "Aktuelles Kapitel",
   "chapters.title": "Kapitel",
-  "chapters.close": "Schließen"
+  "chapters.close": "Schließen",
+  "player.openPlayer": "Zum Player"
 }
