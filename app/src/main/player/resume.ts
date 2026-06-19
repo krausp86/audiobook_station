@@ -18,6 +18,11 @@ export async function resumeLast(): Promise<void> {
   const last = getLatestPosition(db);
   if (!last) return;
 
+  // Ensure repeat/single are off — MPD may restore them from its state file
+  const mpdInit = await getMpd();
+  await mpdInit.send('repeat 0');
+  await mpdInit.send('single 0');
+
   if (last.last_status === 'stopped') return;
 
   try {
