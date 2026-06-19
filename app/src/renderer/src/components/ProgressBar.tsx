@@ -54,7 +54,8 @@ export default function ProgressBar({
 
   // Determine display position and time (either live or drag preview)
   const displayPosition = dragSeconds !== null ? dragSeconds : position;
-  const displayPercent = duration && duration > 0 ? (displayPosition / duration) * 100 : 0;
+  const rawPercent = duration && duration > 0 ? (displayPosition / duration) * 100 : 0;
+  const displayPercent = Math.max(0, Math.min(100, rawPercent));
 
   const handlePointerDown = (e: PointerEvent<HTMLDivElement>): void => {
     if (!trackRef.current) return;

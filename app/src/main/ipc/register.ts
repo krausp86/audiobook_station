@@ -41,20 +41,8 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
     await stop();
     const db = getDb();
     // Mark as stopped: try current media first, fallback to latest DB record
-    if (state.currentPath) {
-      const parts = state.currentPath.split('/');
-      const top = parts[0];
-      let unitPath: string;
-      if (top === 'music') {
-        const mpd = await getMpd();
-        const [song] = (await mpd.send('currentsong')) ?? [];
-        const albumArtist = song?.['AlbumArtist'] ?? song?.['Artist'] ?? 'Unknown Artist';
-        const album = song?.['Album'] ?? 'Unknown Album';
-        unitPath = `music/${albumArtist}/${album}`;
-      } else {
-        unitPath = parts.slice(0, Math.min(3, parts.length - 1)).join('/') || parts[0];
-      }
-      setLastStatus(db, unitPath, 'stopped');
+    if (state.currentUnitPath) {
+      setLastStatus(db, state.currentUnitPath, 'stopped');
     } else {
       const latest = getLatestPosition(db);
       if (latest) setLastStatus(db, latest.media_path, 'stopped');

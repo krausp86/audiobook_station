@@ -189,13 +189,25 @@ async function extractPlaylistChapters(mpd: MpdClient): Promise<Chapter[]> {
       return [];
     }
 
+    // The MPD parser splits records on duplicate metadata keys (e.g. multiple
+    // Artist tags). This creates phantom entries without 'file' that carry
+    // partial data (Time, Pos, etc.). Merge them back into their parent record.
+    const tracks: Record<string, string>[] = [];
+    for (const entry of playlistInfo) {
+      if ('file' in entry) {
+        tracks.push({ ...entry });
+      } else if (tracks.length > 0) {
+        const prev = tracks[tracks.length - 1];
+        for (const [key, val] of Object.entries(entry)) {
+          if (!(key in prev)) {
+            prev[key] = val;
+          }
+        }
+      }
+    }
+
     const chapters: Chapter[] = [];
     let cumulativeSeconds = 0;
-
-    // Filter to entries with a 'file' key — the MPD parser splits records on
-    // duplicate metadata keys (e.g. multiple Artist tags), which can create
-    // phantom entries without 'file' that carry partial duration data.
-    const tracks = playlistInfo.filter((entry) => 'file' in entry);
 
     tracks.forEach((entry, idx) => {
       const title = entry['Title'] || entry['file'] || `Spur ${idx + 1}`;

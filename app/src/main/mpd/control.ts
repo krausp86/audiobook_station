@@ -218,9 +218,13 @@ export async function getState(): Promise<PlayerState> {
     const parts = currentPath.split('/');
     const top = parts[0];
     if (top === 'music') {
-      const albumArtist = song?.['AlbumArtist'] ?? song?.['Artist'] ?? 'Unknown Artist';
-      const album = song?.['Album'] ?? 'Unknown Album';
-      currentUnitPath = `music/${albumArtist}/${album}`;
+      const albumArtist = song?.['AlbumArtist'] ?? song?.['Artist'];
+      const album = song?.['Album'];
+      if (albumArtist && album) {
+        currentUnitPath = `music/${albumArtist}/${album}`;
+      } else {
+        currentUnitPath = currentPath;
+      }
     } else {
       currentUnitPath = parts.slice(0, Math.min(3, parts.length - 1)).join('/') || parts[0];
       if (!currentUnitPath.includes('/')) {

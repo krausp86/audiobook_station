@@ -42,9 +42,14 @@ export async function listLibrary(): Promise<LibraryListResponse> {
     const parts = file.split('/');
     let unitPath: string;
     if (type === 'music') {
-      const albumArtist = f['AlbumArtist'] ?? f['Artist'] ?? 'Unknown Artist';
-      const album = f['Album'] ?? 'Unknown Album';
-      unitPath = `music/${albumArtist}/${album}`;
+      const albumArtist = f['AlbumArtist'] ?? f['Artist'];
+      const album = f['Album'];
+      if (albumArtist && album) {
+        unitPath = `music/${albumArtist}/${album}`;
+      } else {
+        // No proper tags: use file path directly (single file = own tile)
+        unitPath = file;
+      }
     } else {
       unitPath = parts.slice(0, Math.min(3, parts.length - 1)).join('/') || parts[0];
       // Files directly in the top-level dir (e.g. audiobooks/track.mp3) would get

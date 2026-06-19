@@ -26,16 +26,25 @@ async function saveNowInternal(): Promise<void> {
     let displayTitle: string;
 
     if (top === 'music') {
-      // Music: look up AlbumArtist+Album tags from MPD for consistent grouping
       const mpd = await getMpd();
       const [song] = (await mpd.send('currentsong')) ?? [];
-      const albumArtist = song?.['AlbumArtist'] ?? song?.['Artist'] ?? 'Unknown Artist';
-      const album = song?.['Album'] ?? 'Unknown Album';
-      unitPath = `music/${albumArtist}/${album}`;
-      displayTitle = album;
+      const albumArtist = song?.['AlbumArtist'] ?? song?.['Artist'];
+      const album = song?.['Album'];
+      if (albumArtist && album) {
+        unitPath = `music/${albumArtist}/${album}`;
+        displayTitle = album;
+      } else {
+        unitPath = st.currentPath;
+        displayTitle = song?.['Title'] ?? parts[parts.length - 1]?.replace(/\.[^.]+$/, '') ?? unitPath;
+      }
     } else {
       unitPath = parts.slice(0, Math.min(3, parts.length - 1)).join('/') || parts[0];
-      displayTitle = parts[parts.length - 2] ?? unitPath;
+      if (!unitPath.includes('/')) {
+        unitPath = st.currentPath;
+      }
+      displayTitle = parts.length > 2
+        ? (parts[parts.length - 2] ?? unitPath)
+        : (parts[parts.length - 1]?.replace(/\.[^.]+$/, '') ?? unitPath);
     }
 
     const type = top === 'audiobooks' ? 'audiobook' : 'music';
