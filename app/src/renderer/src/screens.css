@@ -1005,23 +1005,43 @@
 .s10-pin-pad-card {
   background: var(--parent-bg);
   border-radius: 16px;
-  padding: var(--space-3);
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
-  min-width: 280px;
+  gap: 8px;
+  width: 260px;
 }
 
 .s10-pin-pad-label {
   color: var(--text-primary);
   margin: 0;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
 }
 
+.s10-pin-pad-card .s9-dots {
+  margin: 4px 0;
+}
+
+.s10-pin-pad-card .s9-pad {
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.s10-pin-pad-card .s9-pad-button {
+  aspect-ratio: auto;
+  min-height: 42px;
+  border-radius: 8px;
+}
+
+.s10-pin-pad-card .s9-pad-delete {
+  min-height: 36px;
+  border-radius: 8px;
+}
+
 .s10-pin-pad-cancel {
-  min-height: 44px;
+  min-height: 36px;
   border-radius: 8px;
   background: transparent;
   color: var(--parent-accent);
