@@ -76,6 +76,9 @@ export function useParentGate({ onTrigger }: UseParentGateOptions): UseParentGat
       startPosRef.current = { x: e.clientX, y: e.clientY };
       setRingRatio(0);
 
+      // Capture pointer so touch events stay on this element even if finger drifts
+      (e.target as Element).setPointerCapture(e.pointerId);
+
       rafRef.current = requestAnimationFrame(tick);
 
       timerRef.current = setTimeout(() => {

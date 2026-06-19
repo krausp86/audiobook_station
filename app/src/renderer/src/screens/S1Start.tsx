@@ -22,7 +22,7 @@ export default function S1Start({ onChoose, onOpenParentGate }: S1Props): React.
         <div
           className="s1-logo-wrap"
           onPointerMove={gate.onPointerMove}
-          style={{ position: 'relative', display: 'inline-flex' }}
+          style={{ position: 'relative', display: 'inline-flex', padding: '12px', margin: '-12px' }}
         >
           <Logo
             size={40}
