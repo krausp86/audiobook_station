@@ -1014,9 +1014,10 @@
 }
 
 .s10-pin-pad-label {
-  color: var(--parent-accent);
+  color: var(--text-primary);
   margin: 0;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
 }
 
 .s10-pin-pad-cancel {
