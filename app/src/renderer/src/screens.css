@@ -982,45 +982,52 @@
   color: var(--parent-accent);
 }
 
-.s10-pin-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.s10-pin-field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.s10-label {
-  color: var(--parent-accent);
-}
-
-.s10-input {
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--parent-accent);
-  border-radius: 8px;
-  font-size: 16px;
-  color: var(--parent-accent);
-  background: #ffffff;
-}
-
-.s10-input:focus {
-  outline: 2px solid var(--parent-accent);
-  outline-offset: 2px;
-}
-
-.s10-pin-save {
-  min-height: 60px;
+.s10-pin-start-btn {
+  min-height: 52px;
   border-radius: 12px;
   background: var(--parent-accent);
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: var(--space-1);
+}
+
+.s10-pin-pad-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.s10-pin-pad-card {
+  background: var(--parent-bg);
+  border-radius: 16px;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 280px;
+}
+
+.s10-pin-pad-label {
+  color: var(--parent-accent);
+  margin: 0;
+  font-weight: 600;
+}
+
+.s10-pin-pad-cancel {
+  min-height: 44px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--parent-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-2);
 }
 
 .s10-pin-message {
