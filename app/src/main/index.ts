@@ -41,6 +41,8 @@ function createWindow(dbError?: string): BrowserWindow {
     if (dbError) {
       win.webContents.send('app:dbError', { message: dbError });
     }
+    // Resume only after the renderer is loaded — no audio before the UI is ready
+    void resumeLast();
   });
 
   return win;
@@ -65,8 +67,7 @@ app.whenReady().then(() => {
   const stopPersist = startPositionPersistence();
   const stopSyncBridge = startSyncLogBridge(() => BrowserWindow.getAllWindows()[0] ?? null);
 
-  // Auto-resume last played item (after idle loop starts so player:state is pushed)
-  void resumeLast();
+  // Resume is triggered in did-finish-load (see createWindow) so no audio plays before the UI
 
   // Cleanup on app quit
   app.on('before-quit', () => {
