@@ -1,5 +1,7 @@
 import { getMpd } from './index';
 import { getChapters, chapterIndexForPosition } from './chapters';
+import { getDb } from '../db';
+import { getMaxVolume } from '../db/dao';
 import type { PlayerState } from '@shared/ipc-contract';
 
 /**
@@ -128,13 +130,16 @@ export async function seekRelative(deltaSeconds: number): Promise<void> {
 
 /**
  * Set the MPD mixer volume (0–100).
- * Clamps to valid range. If mixer is unavailable, silently returns.
+ * Clamps to valid range and enforces the parent-set max volume limit (E14).
+ * If mixer is unavailable, silently returns.
  * @param volume target volume (0–100)
  * @throws Error if MPD command fails unexpectedly
  */
 export async function setVolume(volume: number): Promise<void> {
   const mpd = await getMpd();
-  const clamped = Math.max(0, Math.min(100, Math.floor(volume)));
+  const max = getMaxVolume(getDb());
+  // Hard-cap: never exceed parent's max volume limit (E14 serverseitig)
+  const clamped = Math.max(0, Math.min(max, Math.floor(volume)));
   try {
     await mpd.send(`setvol ${clamped}`);
   } catch (err) {

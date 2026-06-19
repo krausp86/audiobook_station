@@ -12,6 +12,12 @@ export interface PositionRow {
   last_status: 'playing' | 'paused' | 'stopped'; // last known playback state (for resume logic)
 }
 
+/** Keys for accessing settings stored in the `settings` table. */
+export const SETTING_KEYS = {
+  MAX_VOLUME: 'max_volume',
+  PIN_HASH: 'pin_hash',
+} as const;
+
 /**
  * Insert or update playback position for a media item.
  * Uses INSERT ... ON CONFLICT to atomically create or update.
@@ -99,4 +105,72 @@ export function setOnboardingSeen(db: Database.Database, seen: boolean): void {
     s: seen ? 1 : 0,
     ts: seen ? new Date().toISOString() : null,
   });
+}
+
+/**
+ * Read a raw setting value by key, or undefined if not set.
+ * @param db database instance
+ * @param key setting key
+ * @returns setting value as string, or undefined if not found
+ */
+export function getSetting(db: Database.Database, key: string): string | undefined {
+  const row = db.prepare(`SELECT value FROM settings WHERE key = @k`).get({ k: key }) as
+    | { value: string }
+    | undefined;
+  return row?.value;
+}
+
+/**
+ * Insert or update a setting value (upsert by key).
+ * @param db database instance
+ * @param key setting key
+ * @param value setting value as string
+ */
+export function setSetting(db: Database.Database, key: string, value: string): void {
+  db.prepare(
+    `INSERT INTO settings (key, value) VALUES (@k, @v)
+     ON CONFLICT(key) DO UPDATE SET value = @v`,
+  ).run({ k: key, v: value });
+}
+
+/**
+ * Get the maximum child volume limit (0–100).
+ * Default 85 if not set.
+ * @param db database instance
+ * @returns max volume as number, clamped to [0, 100]
+ */
+export function getMaxVolume(db: Database.Database): number {
+  const raw = getSetting(db, SETTING_KEYS.MAX_VOLUME);
+  const n = raw != null ? parseInt(raw, 10) : NaN;
+  return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 85;
+}
+
+/**
+ * Set the maximum child volume limit (0–100).
+ * Value is automatically clamped and floored.
+ * @param db database instance
+ * @param value target max volume (0–100)
+ */
+export function setMaxVolume(db: Database.Database, value: number): void {
+  const clamped = Math.max(0, Math.min(100, Math.floor(value)));
+  setSetting(db, SETTING_KEYS.MAX_VOLUME, String(clamped));
+}
+
+/**
+ * Get the stored PIN hash string (scrypt format).
+ * Returns undefined if no PIN was ever set (default PIN `0000` applies).
+ * @param db database instance
+ * @returns PIN hash string or undefined
+ */
+export function getPinHash(db: Database.Database): string | undefined {
+  return getSetting(db, SETTING_KEYS.PIN_HASH);
+}
+
+/**
+ * Set the stored PIN hash string.
+ * @param db database instance
+ * @param hash PIN hash in scrypt format
+ */
+export function setPinHash(db: Database.Database, hash: string): void {
+  setSetting(db, SETTING_KEYS.PIN_HASH, hash);
 }

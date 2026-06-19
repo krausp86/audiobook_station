@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type Database from 'better-sqlite3';
 import type { Chapter } from '@shared/chapter';
 
 // Module-level mutable state; vi.mock factories close over these at call time.
 let _sendCalls: string[] = [];
 let _sendImpl: (cmd: string) => Promise<Record<string, string>[]> = async () => [];
 let _chaptersResult: Chapter[] = [];
+let _maxVolume = 85; // Mock max volume (default)
 
 vi.mock('./index', () => ({
   getMpd: () =>
@@ -24,6 +26,14 @@ vi.mock('./chapters', async (importOriginal) => {
   };
 });
 
+vi.mock('../db', () => ({
+  getDb: () => ({}) as Database.Database,
+}));
+
+vi.mock('../db/dao', () => ({
+  getMaxVolume: () => _maxVolume,
+}));
+
 import { setVolume, seekRelative, seek } from './control';
 
 // ---------------------------------------------------------------------------
@@ -35,9 +45,10 @@ describe('setVolume', () => {
     _sendImpl = async () => [];
   });
 
-  it('clamps volume above 100 to 100', async () => {
+  it('clamps volume above max_volume', async () => {
+    _maxVolume = 85; // default
     await setVolume(150);
-    expect(_sendCalls).toContain('setvol 100');
+    expect(_sendCalls).toContain('setvol 85');
   });
 
   it('clamps volume below 0 to 0', async () => {
@@ -45,14 +56,32 @@ describe('setVolume', () => {
     expect(_sendCalls).toContain('setvol 0');
   });
 
-  it('passes valid volume unchanged', async () => {
+  it('passes valid volume within max_volume', async () => {
+    _maxVolume = 100;
+    _sendCalls = [];
     await setVolume(75);
     expect(_sendCalls).toContain('setvol 75');
   });
 
   it('floors fractional volume', async () => {
+    _maxVolume = 100;
+    _sendCalls = [];
     await setVolume(73.9);
     expect(_sendCalls).toContain('setvol 73');
+  });
+
+  it('clamps to max_volume (E14 serverseitig)', async () => {
+    _maxVolume = 70;
+    _sendCalls = [];
+    await setVolume(90);
+    expect(_sendCalls).toContain('setvol 70');
+  });
+
+  it('respects max_volume below request', async () => {
+    _maxVolume = 60;
+    _sendCalls = [];
+    await setVolume(50);
+    expect(_sendCalls).toContain('setvol 50');
   });
 });
 

@@ -104,6 +104,22 @@ export interface IpcCommands {
     request: { path: string };
     response: { ok: boolean };
   };
+  'settings:verifyPin': {
+    request: { pin: string };
+    response: { ok: boolean };
+  };
+  'settings:changePin': {
+    request: { currentPin: string; newPin: string };
+    response: { ok: boolean; reason?: 'wrong_current' | 'invalid_format' };
+  };
+  'settings:getMaxVolume': {
+    request: void;
+    response: { maxVolume: number };
+  };
+  'settings:setMaxVolume': {
+    request: { maxVolume: number };
+    response: { ok: boolean };
+  };
 }
 
 /** Events: Main -> Renderer (push, via webContents.send). */
@@ -148,6 +164,10 @@ export const ALLOWED_COMMANDS: IpcCommandChannel[] = [
   'player:getState',
   'onboarding:getSeen',
   'onboarding:setSeen',
+  'settings:verifyPin',
+  'settings:changePin',
+  'settings:getMaxVolume',
+  'settings:setMaxVolume',
 ];
 export const ALLOWED_EVENTS: IpcEventChannel[] = [
   'app:ready',

@@ -31,6 +31,8 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
   const t = useT();
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
   const [chaptersOpen, setChaptersOpen] = useState(false);
+  const [atMaxVolume, setAtMaxVolume] = useState(false);
+  const lastRequestedVolumeRef = useRef<number | null>(null);
 
   // Load initial player state and subscribe to updates
   useEffect(() => {
@@ -64,8 +66,19 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
   const [localPosition, setLocalPosition] = useState(0);
 
   useEffect(() => {
-    if (!playerState) return;
+    if (!playerState) return undefined;
     setLocalPosition(playerState.position);
+
+    // E14 feedback: check if volume didn't increase (hit parent limit)
+    if (lastRequestedVolumeRef.current !== null && playerState.volume !== null) {
+      if (playerState.volume < lastRequestedVolumeRef.current) {
+        // Volume didn't increase as requested
+        setAtMaxVolume(true);
+        const timer = setTimeout(() => setAtMaxVolume(false), 200);
+        return () => clearTimeout(timer);
+      }
+    }
+    return undefined;
   }, [playerState]);
 
   useEffect(() => {
@@ -110,6 +123,7 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
   const handleVolumeUp = (): void => {
     if (playerState?.volume == null) return;
     const newVol = Math.min(100, (playerState?.volume ?? 0) + 10);
+    lastRequestedVolumeRef.current = newVol;
     void window.hoermond.invoke('player:setVolume', { volume: newVol });
   };
 
@@ -212,6 +226,7 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
               status={playerState?.status ?? 'stopped'}
               volume={playerState?.volume ?? null}
               hasChapters={!!hasChapters}
+              atMaxVolume={atMaxVolume}
               onPlayPause={handlePlayPause}
               onPrevChapter={handlePrevChapter}
               onNextChapter={handleNextChapter}

@@ -50,6 +50,15 @@
   color: var(--text-primary);
 }
 
+.s1-gate-ring {
+  position: absolute;
+  inset: -6px;
+  width: calc(100% + 12px);
+  height: calc(100% + 12px);
+  pointer-events: none;
+  transition: opacity 160ms ease-in;
+}
+
 .s1-choices {
   display: flex;
   gap: var(--space-3);
@@ -437,6 +446,22 @@
   opacity: 0.5;
 }
 
+.player-btn-60.is-at-max {
+  animation: player-at-max-pulse 200ms ease-in-out;
+}
+
+@keyframes player-at-max-pulse {
+  0% {
+    background: transparent;
+  }
+  50% {
+    background: rgba(110, 84, 184, 0.2);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
 .player-volume-label {
   color: var(--text-secondary);
   min-width: 40px;
@@ -739,4 +764,290 @@
   justify-content: center;
   color: var(--text-on-deep);
   border-radius: 8px;
+}
+
+/* S9 PIN Dialog */
+@keyframes s9-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-8px);
+  }
+  40% {
+    transform: translateX(8px);
+  }
+  60% {
+    transform: translateX(-6px);
+  }
+  80% {
+    transform: translateX(6px);
+  }
+}
+
+.s9-scrim {
+  position: absolute;
+  inset: 0;
+  width: 800px;
+  height: 480px;
+  background: var(--scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.s9-scrim.is-entered {
+  opacity: 1;
+}
+
+.s9-scrim.is-closing {
+  opacity: 0;
+  transition: opacity 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.s9-card {
+  position: relative;
+  min-width: 320px;
+  max-width: 480px;
+  background: var(--surface);
+  border-radius: 24px;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  transform: scale(0.96);
+  opacity: 0;
+  transition:
+    transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.s9-scrim.is-entered .s9-card {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.s9-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: var(--text-secondary);
+}
+
+.s9-title {
+  color: var(--text-primary);
+  margin: 0;
+  text-align: center;
+  margin-top: var(--space-1);
+}
+
+.s9-dots {
+  display: flex;
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+  transition: transform 200ms ease-in-out;
+}
+
+.s9-dots.is-wrong {
+  animation: s9-shake 200ms ease-in-out;
+}
+
+.s9-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  opacity: 0.3;
+  transition: opacity 150ms;
+}
+
+.s9-dot.is-filled {
+  opacity: 1;
+  background: var(--flieder-deep);
+}
+
+.s9-wrong-hint {
+  color: #d32f2f;
+  margin: 0;
+  text-align: center;
+  font-size: 14px;
+}
+
+.s9-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.s9-pad-button {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: var(--flieder-tint);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+}
+
+.s9-pad-delete {
+  grid-column: 1 / -1;
+  border-radius: 12px;
+  background: var(--flieder-tint);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+}
+
+/* S10 Settings Screen (Slate Theme) */
+.s10-settings {
+  width: 800px;
+  height: 480px;
+  background: var(--parent-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.s10-header {
+  height: 44px;
+  flex: 0 0 44px;
+  background: var(--parent-accent);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--safe-area);
+}
+
+.s10-title {
+  flex: 1;
+  color: #ffffff;
+  margin: 0;
+}
+
+.s10-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2) var(--safe-area);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.s10-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.s10-section-title {
+  color: var(--parent-accent);
+  margin: 0;
+}
+
+.s10-volume-control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.s10-volume-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  background: var(--parent-accent);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.s10-volume-display {
+  flex: 1;
+  text-align: center;
+  color: var(--parent-accent);
+}
+
+.s10-pin-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.s10-pin-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.s10-label {
+  color: var(--parent-accent);
+}
+
+.s10-input {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--parent-accent);
+  border-radius: 8px;
+  font-size: 16px;
+  color: var(--parent-accent);
+  background: #ffffff;
+}
+
+.s10-input:focus {
+  outline: 2px solid var(--parent-accent);
+  outline-offset: 2px;
+}
+
+.s10-pin-save {
+  min-height: 60px;
+  border-radius: 12px;
+  background: var(--parent-accent);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: var(--space-1);
+}
+
+.s10-pin-message {
+  margin: 0;
+  text-align: center;
+  font-size: 14px;
+}
+
+.s10-pin-message--success {
+  color: #2e7d32;
+}
+
+.s10-pin-message--error {
+  color: #d32f2f;
+}
+
+.s10-rescan-btn {
+  min-height: 60px;
+  border-radius: 12px;
+  background: var(--parent-accent);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.s10-placeholder {
+  color: var(--text-secondary);
+  margin: 0;
 }

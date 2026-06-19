@@ -5,6 +5,7 @@ interface PlayerControlsProps {
   status: 'playing' | 'paused' | 'stopped';
   volume: number | null;
   hasChapters: boolean;
+  atMaxVolume?: boolean;
   onPlayPause: () => void;
   onPrevChapter: () => void;
   onNextChapter: () => void;
@@ -19,6 +20,7 @@ export default function PlayerControls({
   status,
   volume,
   hasChapters,
+  atMaxVolume = false,
   onPlayPause,
   onPrevChapter,
   onNextChapter,
@@ -116,7 +118,7 @@ export default function PlayerControls({
         )}
 
         <Pressable
-          className="player-btn player-btn-60"
+          className={`player-btn player-btn-60${atMaxVolume ? ' is-at-max' : ''}`}
           onTap={onVolumeUp}
           disabled={volume === null}
           ariaLabel={t('player.volumeUp')}

@@ -4,6 +4,8 @@ import S1Start from './screens/S1Start';
 import LibraryGrid from './screens/LibraryGrid';
 import S4Detail from './screens/S4Detail';
 import S5Player from './screens/S5Player';
+import S9PinDialog from './screens/S9PinDialog';
+import S10Settings from './screens/S10Settings';
 import MiniPlayer from './components/MiniPlayer';
 import type { LibraryListResponse, MediaItem, PlayerState } from '@shared/ipc-contract';
 
@@ -11,7 +13,9 @@ type Screen =
   | { name: 's0' }
   | { name: 's1' }
   | { name: 'grid'; type: 'audiobook' | 'music' }
-  | { name: 's5'; item: MediaItem };
+  | { name: 's5'; item: MediaItem }
+  | { name: 's9' }
+  | { name: 's10' };
 
 /**
  * Root navigation component: manages screen state, onboarding, library loading,
@@ -99,7 +103,10 @@ export default function Root(): React.JSX.Element {
     <>
       {screen.name === 's0' && <S0Welcome onDone={finishOnboarding} />}
       {screen.name === 's1' && (
-        <S1Start onChoose={(type) => setScreen({ name: 'grid', type })} />
+        <S1Start
+          onChoose={(type) => setScreen({ name: 'grid', type })}
+          onOpenParentGate={() => setScreen({ name: 's9' })}
+        />
       )}
       {screen.name === 'grid' && (
         <LibraryGrid
@@ -119,8 +126,19 @@ export default function Root(): React.JSX.Element {
         />
       )}
 
+      {screen.name === 's9' && (
+        <S9PinDialog
+          onSuccess={() => setScreen({ name: 's10' })}
+          onClose={() => setScreen({ name: 's1' })}
+        />
+      )}
+
+      {screen.name === 's10' && (
+        <S10Settings onBack={() => setScreen({ name: 's1' })} />
+      )}
+
       {/* MiniPlayer: shown on S1/Grid when something is playing */}
-      {playingItem && screen?.name !== 's5' && screen?.name !== 's0' && (
+      {playingItem && screen?.name !== 's5' && screen?.name !== 's0' && screen?.name !== 's9' && screen?.name !== 's10' && (
         <MiniPlayer
           title={playingItem.title}
           status={playerState!.status}

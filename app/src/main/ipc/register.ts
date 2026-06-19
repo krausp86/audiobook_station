@@ -1,11 +1,25 @@
 import { ipcMain, app, type BrowserWindow } from 'electron';
+import type Database from 'better-sqlite3';
 import { play, pause, stop, seek, seekRelative, setVolume, getState } from '../mpd/control';
 import { chapterNext, chapterPrev, chapterGoto } from '../mpd/chapters';
 import { listLibrary } from '../library/list';
 import { getMpd } from '../mpd';
 import { getDb } from '../db';
-import { getOnboardingSeen, setOnboardingSeen, upsertPosition, getLatestPosition, setLastStatus } from '../db/dao';
+import { getOnboardingSeen, setOnboardingSeen, upsertPosition, getLatestPosition, setLastStatus, getMaxVolume, setMaxVolume, getPinHash, setPinHash } from '../db/dao';
 import { saveNow } from '../player/persist';
+import { hashPin, verifyPin, isValidPinFormat } from '../security/pin';
+
+/**
+ * Check if a PIN matches the stored PIN (with fallback to default '0000').
+ * @param db database instance
+ * @param pin plaintext PIN to check
+ * @returns true if PIN is correct, false otherwise
+ */
+function checkPin(db: Database.Database, pin: string): boolean {
+  const stored = getPinHash(db);
+  if (!stored) return pin === '0000'; // Default PIN until one is set
+  return verifyPin(pin, stored);
+}
 
 /**
  * Register all IPC handlers for the Electron main process.
@@ -137,6 +151,35 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
   ipcMain.handle('library:restartFromBeginning', async (_e, p: { path: string }) => {
     upsertPosition(getDb(), p.path, 0, 0);
     await play(p.path);
+    return { ok: true };
+  });
+
+  // settings:verifyPin — check if a PIN is correct against stored hash or default
+  ipcMain.handle('settings:verifyPin', (_e, p: { pin: string }) => {
+    return { ok: checkPin(getDb(), p.pin) };
+  });
+
+  // settings:changePin — verify current PIN and set a new one
+  ipcMain.handle('settings:changePin', (_e, p: { currentPin: string; newPin: string }) => {
+    const db = getDb();
+    if (!checkPin(db, p.currentPin)) {
+      return { ok: false, reason: 'wrong_current' as const };
+    }
+    if (!isValidPinFormat(p.newPin)) {
+      return { ok: false, reason: 'invalid_format' as const };
+    }
+    setPinHash(db, hashPin(p.newPin));
+    return { ok: true };
+  });
+
+  // settings:getMaxVolume — retrieve the current max volume limit
+  ipcMain.handle('settings:getMaxVolume', () => {
+    return { maxVolume: getMaxVolume(getDb()) };
+  });
+
+  // settings:setMaxVolume — set the max volume limit
+  ipcMain.handle('settings:setMaxVolume', (_e, p: { maxVolume: number }) => {
+    setMaxVolume(getDb(), p.maxVolume);
     return { ok: true };
   });
 
