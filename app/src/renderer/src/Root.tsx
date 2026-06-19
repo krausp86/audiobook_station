@@ -125,10 +125,10 @@ export default function Root(): React.JSX.Element {
           title={playingItem.title}
           status={playerState!.status}
           onPlayPause={() => {
-            if (playerState?.status === 'playing') {
-              void window.hoermond.invoke('player:pause', undefined);
-            } else {
+            if (playerState?.status === 'stopped') {
               void window.hoermond.invoke('player:play', { path: playingItem.path });
+            } else {
+              void window.hoermond.invoke('player:pause', undefined);
             }
           }}
           onStop={() => {

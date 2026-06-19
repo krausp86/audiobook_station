@@ -76,13 +76,12 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
     return () => clearInterval(id);
   }, [playerState?.status]);
 
-  const isPlaying = playerState?.status === 'playing';
-
   const handlePlayPause = (): void => {
-    if (isPlaying) {
-      void window.hoermond.invoke('player:pause', undefined);
-    } else {
+    if (playerState?.status === 'stopped' || !playerState?.currentUnitPath) {
       void window.hoermond.invoke('player:play', { path: item.path });
+    } else {
+      // Toggle: playing → pause, paused → unpause
+      void window.hoermond.invoke('player:pause', undefined);
     }
   };
 

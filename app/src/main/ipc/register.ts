@@ -23,13 +23,19 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
     return { ok: true };
   });
 
-  // player:pause — pause playback and save position
+  // player:pause — toggle pause: if playing → pause + save, if paused → unpause
   ipcMain.handle('player:pause', async () => {
-    await saveNow();
-    await pause();
-    const db = getDb();
-    const latest = getLatestPosition(db);
-    if (latest) setLastStatus(db, latest.media_path, 'paused');
+    const mpd = await getMpd();
+    const [st] = await mpd.send('status');
+    if (st?.['state'] === 'pause') {
+      await mpd.send('pause 0');
+    } else {
+      await saveNow();
+      await pause();
+      const db = getDb();
+      const latest = getLatestPosition(db);
+      if (latest) setLastStatus(db, latest.media_path, 'paused');
+    }
     return { ok: true };
   });
 
