@@ -14,14 +14,15 @@ import { getMpd } from '../mpd';
  * For multi-track media (MP3-Ordner), restores both the track index and position within that track.
  */
 export async function resumeLast(): Promise<void> {
+  // Ensure repeat/single are off — MPD may restore them from its state file
+  const mpd = await getMpd();
+  await mpd.send('repeat 0');
+  await mpd.send('single 0');
+  await mpd.send('consume 0');
+
   const db = getDb();
   const last = getLatestPosition(db);
   if (!last) return;
-
-  // Ensure repeat/single are off — MPD may restore them from its state file
-  const mpdInit = await getMpd();
-  await mpdInit.send('repeat 0');
-  await mpdInit.send('single 0');
 
   if (last.last_status === 'stopped') return;
 

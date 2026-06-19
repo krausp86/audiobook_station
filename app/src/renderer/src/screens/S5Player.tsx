@@ -39,20 +39,24 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
     return () => off();
   }, []);
 
-  // Auto-play on mount if not already playing this item.
-  // Uses a ref to prevent re-triggering during transient null states
-  // (play() does clear → add → play, and the clear triggers an idle push with currentPath=null).
+  // Auto-play ONCE on mount if not already playing this item.
+  // hasPlayedRef tracks whether this item has been successfully loaded — once true,
+  // the effect will never restart playback (prevents loop when track naturally ends
+  // and currentUnitPath becomes null).
+  const hasPlayedRef = useRef(false);
   const playRequestedRef = useRef(false);
   useEffect(() => {
     if (!playerState) return;
     if (playerState.currentUnitPath === item.path) {
+      hasPlayedRef.current = true;
       playRequestedRef.current = false;
       return;
     }
+    if (hasPlayedRef.current) return;
     if (playRequestedRef.current) return;
     playRequestedRef.current = true;
     void window.hoermond.invoke('player:play', { path: item.path });
-  }, [item.path, playerState?.currentPath]);
+  }, [item.path, playerState?.currentUnitPath]);
 
   // Client-side position interpolation: MPD idle only fires on state changes,
   // not during continuous playback, so we increment locally every second.
