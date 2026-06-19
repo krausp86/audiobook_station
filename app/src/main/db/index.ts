@@ -5,7 +5,10 @@ const DB_PATH = process.env['HOERMOND_DB_PATH'] ?? '/var/lib/mediaplayer/state.d
 
 export function openDatabase(): Database.Database {
   const db = new Database(DB_PATH);
-  db.pragma('journal_mode = WAL');
+  // DELETE mode instead of WAL: with overlayfs, the WAL file lives on the
+  // volatile overlay and is lost on power loss. DELETE writes directly to the
+  // main DB file which is on the persistent bind-mount.
+  db.pragma('journal_mode = DELETE');
   db.pragma('foreign_keys = ON');
   runMigrations(db);
   return db;
