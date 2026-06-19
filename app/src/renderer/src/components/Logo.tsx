@@ -38,6 +38,7 @@ export default function Logo({
       role="img"
       aria-label="Hörmond"
       className={className}
+      style={{ pointerEvents: 'none' }}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
       onPointerLeave={onPointerLeave}

@@ -77,7 +77,7 @@ export function useParentGate({ onTrigger }: UseParentGateOptions): UseParentGat
       setRingRatio(0);
 
       // Capture pointer so touch events stay on this element even if finger drifts
-      (e.target as Element).setPointerCapture(e.pointerId);
+      (e.currentTarget as Element).setPointerCapture(e.pointerId);
 
       rafRef.current = requestAnimationFrame(tick);
 

@@ -21,15 +21,13 @@ export default function S1Start({ onChoose, onOpenParentGate }: S1Props): React.
       <header className="s1-logo">
         <div
           className="s1-logo-wrap"
+          onPointerDown={gate.onPointerDown}
           onPointerMove={gate.onPointerMove}
-          style={{ position: 'relative', display: 'inline-flex', padding: '12px', margin: '-12px' }}
+          onPointerUp={gate.onPointerUp}
+          onPointerLeave={gate.onPointerLeave}
+          style={{ position: 'relative', display: 'inline-flex', padding: '12px', margin: '-12px', touchAction: 'none' }}
         >
-          <Logo
-            size={40}
-            onPointerDown={gate.onPointerDown}
-            onPointerUp={gate.onPointerUp}
-            onPointerLeave={gate.onPointerLeave}
-          />
+          <Logo size={40} />
           {gate.ringRatio > 0 && (
             <svg className="s1-gate-ring" viewBox="0 0 100 100" aria-hidden="true">
               <circle
