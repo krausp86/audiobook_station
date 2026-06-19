@@ -58,24 +58,20 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
     void window.hoermond.invoke('player:play', { path: item.path });
   }, [item.path, playerState?.currentUnitPath]);
 
-  // Client-side position interpolation: MPD idle only fires on state changes,
-  // not during continuous playback, so we increment locally every second.
+  // Client-side position tick: MPD idle only fires on state changes, not during
+  // continuous playback. We increment +1s locally every second. Any server push
+  // (seek, pause, track change) resets to the authoritative value.
   const [localPosition, setLocalPosition] = useState(0);
-  const serverPositionRef = useRef(0);
-  const serverSyncRef = useRef(Date.now());
 
   useEffect(() => {
     if (!playerState) return;
-    serverPositionRef.current = playerState.position;
-    serverSyncRef.current = Date.now();
     setLocalPosition(playerState.position);
   }, [playerState]);
 
   useEffect(() => {
     if (playerState?.status !== 'playing') return;
     const id = setInterval(() => {
-      const elapsed = (Date.now() - serverSyncRef.current) / 1000;
-      setLocalPosition(serverPositionRef.current + elapsed);
+      setLocalPosition((prev) => prev + 1);
     }, 1000);
     return () => clearInterval(id);
   }, [playerState?.status]);

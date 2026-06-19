@@ -205,12 +205,6 @@ export async function getState(): Promise<PlayerState> {
 
       // Total duration is sum of all track durations
       totalDuration = chapters.reduce((sum, ch) => sum + ch.durationSeconds, 0);
-
-      // Debug: log position calculation to diagnose position jumps after resume
-      const offsetBefore = chapters
-        .slice(0, currentChapterIndex!)
-        .reduce((sum, ch) => sum + ch.durationSeconds, 0);
-      console.log(`[getState] song=${st['song']} chapterIdx=${currentChapterIndex} elapsed=${elapsed.toFixed(1)} offset=${offsetBefore} global=${globalPosition} total=${totalDuration} chapters=${chapters.length}`);
     } else {
       // M4B/seekOffset: chapter index from position lookup (track-relative), position is already correct
       currentChapterIndex = chapterIndexForPosition(chapters, Math.round(elapsed));
