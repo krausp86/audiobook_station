@@ -15,10 +15,12 @@ function PinPad({
   label,
   onComplete,
   onCancel,
+  verify,
 }: {
   label: string;
   onComplete: (pin: string) => void;
   onCancel: () => void;
+  verify?: (pin: string) => Promise<boolean>;
 }): React.JSX.Element {
   const t = useT();
   const [entry, setEntry] = useState('');
@@ -29,11 +31,17 @@ function PinPad({
     const next = entry + d;
     setEntry(next);
     if (next.length === 4) {
-      onComplete(next);
+      if (verify) {
+        void verify(next).then((ok) => {
+          if (ok) { onComplete(next); }
+          else { setWrong(true); }
+        });
+      } else {
+        onComplete(next);
+      }
     }
   };
 
-  // Exposed for parent to signal "wrong" shake + reset
   useEffect(() => {
     if (!wrong) return undefined;
     const id = setTimeout(() => { setEntry(''); setWrong(false); }, 200);
@@ -186,6 +194,10 @@ export default function S10Settings({ onBack }: S10Props): React.JSX.Element {
           label={t('settings.changePin.current')}
           onComplete={handleCurrentPinEntered}
           onCancel={() => setPinStep('idle')}
+          verify={async (pin) => {
+            const { ok } = await window.hoermond.invoke('settings:verifyPin', { pin });
+            return ok;
+          }}
         />
       )}
       {pinStep === 'enter-new' && (

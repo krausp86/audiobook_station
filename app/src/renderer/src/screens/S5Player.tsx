@@ -71,8 +71,9 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
 
     // E14 feedback: check if volume didn't increase (hit parent limit)
     if (lastRequestedVolumeRef.current !== null && playerState.volume !== null) {
-      if (playerState.volume < lastRequestedVolumeRef.current) {
-        // Volume didn't increase as requested
+      const hitLimit = playerState.volume < lastRequestedVolumeRef.current;
+      lastRequestedVolumeRef.current = null;
+      if (hitLimit) {
         setAtMaxVolume(true);
         const timer = setTimeout(() => setAtMaxVolume(false), 200);
         return () => clearTimeout(timer);
@@ -116,6 +117,7 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
 
   const handleVolumeDown = (): void => {
     if (playerState?.volume == null) return;
+    lastRequestedVolumeRef.current = null;
     const newVol = Math.max(0, playerState.volume - 10);
     void window.hoermond.invoke('player:setVolume', { volume: newVol });
   };

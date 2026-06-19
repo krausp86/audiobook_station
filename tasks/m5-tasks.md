@@ -1059,9 +1059,9 @@ echtem kapazitivem Touch und ist für ein Kind nicht versehentlich auslösbar.
   re-deployen).
 
 **Akzeptanzkriterien:**
-- [ ] App startet im Kiosk; Logo-Halten öffnet S9 zuverlässig bei ~2 s.
-- [ ] Kurzes Tippen/Wischen öffnet das Gate **nicht**.
-- [ ] Ring-Feedback am echten Display flüssig und korrekt positioniert.
+- [x] App startet im Kiosk; Logo-Halten öffnet S9 zuverlässig bei ~2 s.
+- [x] Kurzes Tippen/Wischen öffnet das Gate **nicht**.
+- [x] Ring-Feedback am echten Display flüssig und korrekt positioniert.
 
 ---
 
@@ -1087,9 +1087,9 @@ einen Reboot hinweg (overlayfs-sicher).
   zeigen) — gegen die M1/M2-Annahmen prüfen.
 
 **Akzeptanzkriterien:**
-- [ ] Falsche PIN: Shake + Hinweis, kein Lockout.
-- [ ] Geänderte PIN gilt nach Reboot; alte PIN gilt nicht mehr.
-- [ ] Kein Klartext der PIN in der DB sichtbar (Stichprobe, siehe T5.16).
+- [x] Falsche PIN: Shake + Hinweis, kein Lockout.
+- [x] Geänderte PIN gilt nach Reboot; alte PIN gilt nicht mehr.
+- [x] Kein Klartext der PIN in der DB sichtbar (Stichprobe, siehe T5.16).
 
 ---
 
@@ -1115,9 +1115,9 @@ einen Reboot hinweg (overlayfs-sicher).
   (sofortiges Nachziehen) aktivieren und re-deployen.
 
 **Akzeptanzkriterien:**
-- [ ] Kind-Lautstärke steigt hörbar nur bis `max_volume`.
-- [ ] Am Limit „am Anschlag"-Feedback ohne Pegeländerung.
-- [ ] `max_volume` bleibt nach Reboot erhalten.
+- [x] Kind-Lautstärke steigt hörbar nur bis `max_volume`.
+- [x] Am Limit „am Anschlag"-Feedback ohne Pegeländerung.
+- [x] `max_volume` bleibt nach Reboot erhalten.
 
 ---
 
@@ -1143,9 +1143,9 @@ im Klartext** vor — nicht in der DB, nicht im Log, nicht im Renderer.
   T5.04), Logging entfernen, re-deployen.
 
 **Akzeptanzkriterien:**
-- [ ] `settings.pin_hash` ist gehasht (`scrypt$…`), keine Klartext-PIN in der DB.
-- [ ] Keine Klartext-PIN in Logs/Journal.
-- [ ] Kein Hash/Secret wird über IPC an den Renderer gereicht.
+- [x] `settings.pin_hash` ist gehasht (`scrypt$…`), keine Klartext-PIN in der DB.
+- [x] Keine Klartext-PIN in Logs/Journal.
+- [x] Kein Hash/Secret wird über IPC an den Renderer gereicht.
 
 ---
 

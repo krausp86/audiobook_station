@@ -877,7 +877,7 @@
 }
 
 .s9-wrong-hint {
-  color: #d32f2f;
+  color: var(--warning);
   margin: 0;
   text-align: center;
   font-size: 14px;
@@ -1058,11 +1058,11 @@
 }
 
 .s10-pin-message--success {
-  color: #2e7d32;
+  color: var(--success);
 }
 
 .s10-pin-message--error {
-  color: #d32f2f;
+  color: var(--warning);
 }
 
 .s10-rescan-btn {
