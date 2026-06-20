@@ -51,7 +51,7 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
       .invoke('bt:getStatus', undefined)
       .then((s) => setBtConnected(s.connected !== null));
     const off = window.hoermond.on('bt:connection', (e) =>
-      setBtConnected(e.event === 'connected'),
+      setBtConnected(e.device !== null),
     );
     return () => off();
   }, []);
@@ -186,30 +186,32 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
               <svg
                 className="s5-titlebar-icon"
                 viewBox="0 0 24 24"
-                fill="currentColor"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 aria-hidden="true"
               >
-                {/* Bluetooth connected: solid symbol */}
-                <path d="M17.71 11.71L12 6h-.01L6.29 11.71C6.1 11.9 6 12.16 6 12.41v.01c0 .25.1.51.29.7l5.41 5.41 5.41-5.41c.19-.19.29-.45.29-.7v-.01c0-.25-.1-.51-.29-.7zM12 4v3.59L9.41 10 12 7.41 14.59 10 12 7.59V4zm0 16v-3.59L14.59 14 12 16.59 9.41 14 12 16.41V20z" />
+                <polyline points="6.5 6.5 12 12 17.5 6.5" />
+                <polyline points="6.5 17.5 12 12 17.5 17.5" />
+                <line x1="12" y1="2" x2="12" y2="22" />
               </svg>
             ) : (
               <svg
                 className="s5-titlebar-icon"
                 viewBox="0 0 24 24"
-                fill="currentColor"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 aria-hidden="true"
               >
-                {/* Bluetooth disconnected: symbol with slash */}
-                <path d="M17.71 11.71L12 6h-.01L6.29 11.71C6.1 11.9 6 12.16 6 12.41v.01c0 .25.1.51.29.7l5.41 5.41 5.41-5.41c.19-.19.29-.45.29-.7v-.01c0-.25-.1-.51-.29-.7zM12 4v3.59L9.41 10 12 7.41 14.59 10 12 7.59V4zm0 16v-3.59L14.59 14 12 16.59 9.41 14 12 16.41V20z" />
-                <line
-                  x1="2"
-                  y1="2"
-                  x2="22"
-                  y2="22"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
+                <path d="M12 2v6.5L16 5" />
+                <path d="M12 22v-6.5L16 19" />
+                <line x1="12" y1="8.5" x2="12" y2="15.5" />
+                <line x1="3" y1="21" x2="21" y2="3" strokeWidth="2.5" />
               </svg>
             )}
           </Pressable>

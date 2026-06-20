@@ -134,10 +134,7 @@ class BtAdapter {
       const devices: BtDevice[] = [];
       const seenMacs = new Set<string>();
 
-      // Use timeout wrapper to ensure scan stops after specified duration
-      const { stdout } = await execFileAsync('timeout', [
-        String(durationSec),
-        'bluetoothctl',
+      const { stdout } = await execFileAsync('bluetoothctl', [
         '--timeout',
         String(durationSec),
         'scan',

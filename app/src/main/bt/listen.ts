@@ -27,10 +27,12 @@ export function startBtListener(
   let proc: ChildProcess | null = null;
   let backoff = 500;
   let lastConnectedMac: string | null = null;
+  let debounceTimer: NodeJS.Timeout | null = null;
 
   /**
    * Fetch the current BT status and emit event to renderer if connection state changed.
    * Implements debouncing: only fires event on actual state change.
+   * Uses a 150ms debounce to coalesce multiple [CHG] lines per state transition.
    */
   const handleConnectionChange = async (): Promise<void> => {
     try {
@@ -65,7 +67,7 @@ export function startBtListener(
 
     try {
       proc = spawn('bluetoothctl', [], {
-        stdio: ['ignore', 'pipe', 'pipe'],
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
 
       let buffer = '';
@@ -82,7 +84,8 @@ export function startBtListener(
 
           // Look for connection state changes
           if (/^\[CHG\]\s+Device\s+[0-9A-Fa-f:]+\s+Connected:\s+(yes|no)/.test(trimmed)) {
-            void handleConnectionChange();
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => void handleConnectionChange(), 150);
           }
         }
       });
@@ -114,6 +117,7 @@ export function startBtListener(
 
   return () => {
     stopped = true;
+    if (debounceTimer) clearTimeout(debounceTimer);
     if (proc) {
       proc.kill();
       proc = null;

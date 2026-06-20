@@ -280,13 +280,13 @@ export default function S10Settings({ onBack }: S10Props): React.JSX.Element {
                 className="s10-bt-confirm-cancel"
                 onTap={() => setBtRemoveConfirm(null)}
               >
-                <span className="t-label">Abbrechen</span>
+                <span className="t-label">{t('bt.cancel')}</span>
               </Pressable>
               <Pressable
                 className="s10-bt-confirm-ok"
                 onTap={() => void handleRemoveDevice(btRemoveConfirm)}
               >
-                <span className="t-label">Löschen</span>
+                <span className="t-label">{t('bt.delete')}</span>
               </Pressable>
             </div>
           </div>

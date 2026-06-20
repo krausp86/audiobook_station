@@ -94,10 +94,10 @@ export function ToastProvider({
       setToast((prev) => (prev?.id === id ? { ...prev, phase: 'out' } : null));
     }, 200 + 3500);
 
-    // Remove from DOM after 160ms (out animation)
+    // Remove from DOM after 200ms (out animation, spec: 200ms)
     timersRef.current.out = setTimeout(() => {
       setToast((prev) => (prev?.id === id ? null : prev));
-    }, 200 + 3500 + 160);
+    }, 200 + 3500 + 200);
   }, []);
 
   return (

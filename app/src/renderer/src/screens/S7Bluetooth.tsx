@@ -12,13 +12,6 @@ import type { BtDevice, BtStatus } from '@shared/bt';
  * - Scan for new devices with progress indicator (30s)
  * - Pair and connect newly found devices
  * - Modal pattern: scrim, enter 220ms, exit 160ms, tap outside closes
- *
- * Layout:
- * - Header: "Bluetooth" title + close button
- * - Currently connected device
- * - Paired devices list
- * - "Scan for new device" button
- * - During scan: progress ring + list of discovered devices
  */
 interface S7Props {
   onClose: () => void;

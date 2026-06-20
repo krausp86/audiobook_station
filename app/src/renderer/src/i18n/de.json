@@ -72,6 +72,8 @@
   "bt.scanNoResults": "Kein Gerät gefunden",
   "bt.remove": "Gerät entfernen",
   "bt.removeConfirm": "Kopplung wirklich entfernen?",
+  "bt.cancel": "Abbrechen",
+  "bt.delete": "Löschen",
   "bt.close": "Schließen",
   "bt.toast.connected": "{device} verbunden",
   "bt.toast.disconnected": "{device} getrennt",
