@@ -508,6 +508,24 @@
   pointer-events: none;
 }
 
+.s5-bt-icon {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  pointer-events: auto;
+}
+
+.s5-bt-icon--connected {
+  color: var(--flieder-deep);
+}
+
+.s5-bt-icon--disconnected {
+  color: var(--text-secondary);
+}
+
 .s5-content {
   flex: 1;
   display: flex;
@@ -1078,4 +1096,331 @@
 .s10-placeholder {
   color: var(--text-secondary);
   margin: 0;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(120px);
+  max-width: 600px;
+  padding: 16px 20px;
+  background: var(--text-primary);
+  color: var(--surface);
+  border-radius: 12px;
+  font-size: 16px;
+  line-height: 22px;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+  font-weight: 500;
+}
+
+.toast--in {
+  animation: toast-slide-in 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.toast--visible {
+  animation: toast-visible 3500ms linear forwards;
+  animation-delay: 200ms;
+}
+
+.toast--out {
+  animation: toast-slide-out 160ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: 3700ms;
+}
+
+@keyframes toast-slide-in {
+  from {
+    transform: translateX(-50%) translateY(120px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-visible {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes toast-slide-out {
+  from {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-50%) translateY(120px);
+    opacity: 0;
+  }
+}
+
+/* S7 Bluetooth Dialog */
+.s7-scrim {
+  position: absolute;
+  inset: 0;
+  width: 800px;
+  height: 480px;
+  background: var(--scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.s7-scrim.is-entered {
+  opacity: 1;
+}
+
+.s7-scrim.is-closing {
+  opacity: 0;
+  transition: opacity 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.s7-card {
+  position: relative;
+  width: 680px;
+  height: 400px;
+  background: var(--surface);
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  transform: scale(0.96);
+  opacity: 0;
+  transition:
+    transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.s7-scrim.is-entered .s7-card {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.s7-header {
+  position: relative;
+  flex: 0 0 auto;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-2);
+  border-bottom: 1px solid var(--flieder-tint);
+}
+
+.s7-title {
+  color: var(--text-primary);
+  margin: 0;
+  flex: 1;
+}
+
+.s7-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: var(--text-secondary);
+}
+
+.s7-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-3);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.s7-section {
+  margin-bottom: var(--space-3);
+}
+
+.s7-section-label {
+  color: var(--text-primary);
+  margin: 0 0 var(--space-2) 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.s7-device-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--flieder-tint);
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+.s7-device-name {
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 500;
+  flex: 1;
+}
+
+.s7-device-action {
+  min-width: 100px;
+  padding: 8px 12px;
+  background: var(--flieder-deep);
+  color: #ffffff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: var(--space-1);
+}
+
+.s7-device-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.s7-no-device,
+.s7-no-devices,
+.s7-no-results {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.s7-scan-btn {
+  width: 100%;
+  min-height: 60px;
+  background: var(--flieder);
+  color: var(--text-on-flieder);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.s7-scan-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.s7-scan-progress {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.s7-scan-ring {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+/* S10 Bluetooth Device Management */
+.s10-bt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.s10-bt-device {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--flieder-tint);
+  border-radius: 12px;
+}
+
+.s10-bt-device-name {
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 500;
+  flex: 1;
+}
+
+.s10-bt-remove-btn {
+  min-width: 100px;
+  padding: 8px 12px;
+  background: var(--warning);
+  color: #ffffff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: var(--space-1);
+  font-weight: 500;
+}
+
+.s10-bt-remove-btn.is-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.s10-bt-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  width: 800px;
+  height: 480px;
+  background: rgba(42, 35, 66, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.s10-bt-confirm-card {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: var(--space-3);
+  min-width: 300px;
+  max-width: 500px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.s10-bt-confirm-text {
+  color: var(--text-primary);
+  text-align: center;
+  margin: 0 0 var(--space-3) 0;
+  font-weight: 500;
+}
+
+.s10-bt-confirm-buttons {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.s10-bt-confirm-cancel,
+.s10-bt-confirm-ok {
+  flex: 1;
+  min-height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.s10-bt-confirm-cancel {
+  background: var(--text-secondary);
+  color: #ffffff;
+}
+
+.s10-bt-confirm-ok {
+  background: var(--warning);
+  color: #ffffff;
 }

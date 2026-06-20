@@ -3,7 +3,9 @@ import { useT } from '../i18n/I18nContext';
 import ProgressBar from '../components/ProgressBar';
 import PlayerControls from '../components/PlayerControls';
 import BackButton from '../components/BackButton';
+import Pressable from '../components/Pressable';
 import S6Chapters from './S6Chapters';
+import S7Bluetooth from './S7Bluetooth';
 import type { MediaItem, PlayerState } from '@shared/ipc-contract';
 
 /**
@@ -31,6 +33,8 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
   const t = useT();
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
   const [chaptersOpen, setChaptersOpen] = useState(false);
+  const [btOpen, setBtOpen] = useState(false);
+  const [btConnected, setBtConnected] = useState(false);
   const [atMaxVolume, setAtMaxVolume] = useState(false);
   const lastRequestedVolumeRef = useRef<number | null>(null);
 
@@ -38,6 +42,17 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
   useEffect(() => {
     void window.hoermond.invoke('player:getState', undefined).then(setPlayerState);
     const off = window.hoermond.on('player:state', setPlayerState);
+    return () => off();
+  }, []);
+
+  // Load BT status and subscribe to connection events
+  useEffect(() => {
+    void window.hoermond
+      .invoke('bt:getStatus', undefined)
+      .then((s) => setBtConnected(s.connected !== null));
+    const off = window.hoermond.on('bt:connection', (e) =>
+      setBtConnected(e.event === 'connected'),
+    );
     return () => off();
   }, []);
 
@@ -155,21 +170,49 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
           </h1>
         </div>
 
-        {/* Placeholder icons (M6, M7) */}
+        {/* Icons */}
         <div className="s5-titlebar-icons">
-          {/* Bluetooth icon (placeholder, no function) */}
-          <svg
-            className="s5-titlebar-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            aria-hidden="true"
+          {/* Bluetooth icon — connected or disconnected */}
+          <Pressable
+            className={`s5-bt-icon${btConnected ? ' s5-bt-icon--connected' : ' s5-bt-icon--disconnected'}`}
+            onTap={() => setBtOpen(true)}
+            ariaLabel={
+              btConnected
+                ? t('bt.icon.connected')
+                : t('bt.icon.disconnected')
+            }
           >
-            <polyline points="17 16 12 20 7 16" />
-            <polyline points="17 8 12 4 7 8" />
-            <line x1="12" y1="20" x2="12" y2="4" />
-          </svg>
+            {btConnected ? (
+              <svg
+                className="s5-titlebar-icon"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                {/* Bluetooth connected: solid symbol */}
+                <path d="M17.71 11.71L12 6h-.01L6.29 11.71C6.1 11.9 6 12.16 6 12.41v.01c0 .25.1.51.29.7l5.41 5.41 5.41-5.41c.19-.19.29-.45.29-.7v-.01c0-.25-.1-.51-.29-.7zM12 4v3.59L9.41 10 12 7.41 14.59 10 12 7.59V4zm0 16v-3.59L14.59 14 12 16.59 9.41 14 12 16.41V20z" />
+              </svg>
+            ) : (
+              <svg
+                className="s5-titlebar-icon"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                {/* Bluetooth disconnected: symbol with slash */}
+                <path d="M17.71 11.71L12 6h-.01L6.29 11.71C6.1 11.9 6 12.16 6 12.41v.01c0 .25.1.51.29.7l5.41 5.41 5.41-5.41c.19-.19.29-.45.29-.7v-.01c0-.25-.1-.51-.29-.7zM12 4v3.59L9.41 10 12 7.41 14.59 10 12 7.59V4zm0 16v-3.59L14.59 14 12 16.59 9.41 14 12 16.41V20z" />
+                <line
+                  x1="2"
+                  y1="2"
+                  x2="22"
+                  y2="22"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            )}
+          </Pressable>
 
           {/* Moon icon (placeholder, no function) */}
           <svg
@@ -249,6 +292,13 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
           currentChapterIndex={playerState.currentChapterIndex}
           onGoto={handleChapterGoto}
           onClose={() => setChaptersOpen(false)}
+        />
+      )}
+
+      {/* S7 Bluetooth overlay */}
+      {btOpen && (
+        <S7Bluetooth
+          onClose={() => setBtOpen(false)}
         />
       )}
     </div>

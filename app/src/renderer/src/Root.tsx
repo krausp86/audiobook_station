@@ -7,6 +7,7 @@ import S5Player from './screens/S5Player';
 import S9PinDialog from './screens/S9PinDialog';
 import S10Settings from './screens/S10Settings';
 import MiniPlayer from './components/MiniPlayer';
+import BtToastBridge from './components/BtToastBridge';
 import type { LibraryListResponse, MediaItem, PlayerState } from '@shared/ipc-contract';
 
 type Screen =
@@ -101,6 +102,9 @@ export default function Root(): React.JSX.Element {
 
   return (
     <>
+      {/* Bluetooth connection → Toast bridge (global, not screen-specific) */}
+      <BtToastBridge />
+
       {screen.name === 's0' && <S0Welcome onDone={finishOnboarding} />}
       {screen.name === 's1' && (
         <S1Start

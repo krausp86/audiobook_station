@@ -60,5 +60,21 @@
   "settings.bluetooth.placeholder": "Bald verfügbar",
   "settings.syncLog": "Sync-Protokoll",
   "settings.syncLog.placeholder": "Bald verfügbar",
-  "settings.back": "Zurück"
+  "settings.back": "Zurück",
+  "bt.title": "Bluetooth",
+  "bt.connected": "Verbunden",
+  "bt.noDevice": "Kein Gerät",
+  "bt.paired": "Gekoppelte Geräte",
+  "bt.connect": "Verbinden",
+  "bt.disconnect": "Trennen",
+  "bt.pairNew": "Neues Gerät koppeln",
+  "bt.scanning": "Suche läuft …",
+  "bt.scanNoResults": "Kein Gerät gefunden",
+  "bt.remove": "Gerät entfernen",
+  "bt.removeConfirm": "Kopplung wirklich entfernen?",
+  "bt.close": "Schließen",
+  "bt.toast.connected": "{device} verbunden",
+  "bt.toast.disconnected": "{device} getrennt",
+  "bt.icon.connected": "Bluetooth verbunden",
+  "bt.icon.disconnected": "Bluetooth nicht verbunden"
 }

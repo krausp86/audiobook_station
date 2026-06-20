@@ -1,4 +1,5 @@
 import type { Chapter } from './chapter';
+import type { BtDevice, BtStatus } from './bt';
 
 /** Represents a playable audio/video item (audiobook or music track). */
 export interface MediaItem {
@@ -120,6 +121,34 @@ export interface IpcCommands {
     request: { maxVolume: number };
     response: { ok: boolean };
   };
+  'bt:getStatus': {
+    request: void;
+    response: BtStatus;
+  };
+  'bt:listPaired': {
+    request: void;
+    response: { devices: BtDevice[] };
+  };
+  'bt:scan': {
+    request: { durationMs?: number };
+    response: { devices: BtDevice[] };
+  };
+  'bt:pair': {
+    request: { mac: string };
+    response: { ok: boolean };
+  };
+  'bt:connect': {
+    request: { mac: string };
+    response: { ok: boolean };
+  };
+  'bt:disconnect': {
+    request: { mac: string };
+    response: { ok: boolean };
+  };
+  'bt:removeDevice': {
+    request: { mac: string };
+    response: { ok: boolean };
+  };
 }
 
 /** Events: Main -> Renderer (push, via webContents.send). */
@@ -129,6 +158,7 @@ export interface IpcEvents {
   'player:state': PlayerState;
   'library:updated': { ts: number };
   'sync:status': SyncStatus;
+  'bt:connection': { device: BtDevice | null; event: 'connected' | 'disconnected' };
 }
 
 export type IpcCommandChannel = keyof IpcCommands;
@@ -168,6 +198,13 @@ export const ALLOWED_COMMANDS: IpcCommandChannel[] = [
   'settings:changePin',
   'settings:getMaxVolume',
   'settings:setMaxVolume',
+  'bt:getStatus',
+  'bt:listPaired',
+  'bt:scan',
+  'bt:pair',
+  'bt:connect',
+  'bt:disconnect',
+  'bt:removeDevice',
 ];
 export const ALLOWED_EVENTS: IpcEventChannel[] = [
   'app:ready',
@@ -175,6 +212,7 @@ export const ALLOWED_EVENTS: IpcEventChannel[] = [
   'player:state',
   'library:updated',
   'sync:status',
+  'bt:connection',
 ];
 
 /**

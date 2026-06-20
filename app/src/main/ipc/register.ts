@@ -8,6 +8,7 @@ import { getDb } from '../db';
 import { getOnboardingSeen, setOnboardingSeen, upsertPosition, getLatestPosition, setLastStatus, getMaxVolume, setMaxVolume, getPinHash, setPinHash } from '../db/dao';
 import { saveNow } from '../player/persist';
 import { hashPin, verifyPin, isValidPinFormat } from '../security/pin';
+import { getBtAdapter } from '../bt/adapter';
 
 /**
  * Check if a PIN matches the stored PIN (with fallback to default '0000').
@@ -182,6 +183,31 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
     setMaxVolume(getDb(), p.maxVolume);
     return { ok: true };
   });
+
+  // bt:getStatus — get current Bluetooth adapter status
+  ipcMain.handle('bt:getStatus', () => getBtAdapter().getStatus());
+
+  // bt:listPaired — list all paired Bluetooth devices
+  ipcMain.handle('bt:listPaired', async () => ({
+    devices: await getBtAdapter().listPaired(),
+  }));
+
+  // bt:scan — scan for available Bluetooth devices (30s by default)
+  ipcMain.handle('bt:scan', async (_e, p?: { durationMs?: number }) => ({
+    devices: await getBtAdapter().scan(p?.durationMs ?? 30000),
+  }));
+
+  // bt:pair — pair and trust a Bluetooth device
+  ipcMain.handle('bt:pair', (_e, p: { mac: string }) => getBtAdapter().pair(p.mac));
+
+  // bt:connect — connect to a paired Bluetooth device
+  ipcMain.handle('bt:connect', (_e, p: { mac: string }) => getBtAdapter().connect(p.mac));
+
+  // bt:disconnect — disconnect from a Bluetooth device
+  ipcMain.handle('bt:disconnect', (_e, p: { mac: string }) => getBtAdapter().disconnect(p.mac));
+
+  // bt:removeDevice — unpair a Bluetooth device
+  ipcMain.handle('bt:removeDevice', (_e, p: { mac: string }) => getBtAdapter().remove(p.mac));
 
   // unused: suppress warning
   void getWindow;

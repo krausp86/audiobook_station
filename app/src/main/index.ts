@@ -7,6 +7,7 @@ import { startIdleLoop } from './mpd/idle';
 import { startPositionPersistence } from './player/persist';
 import { resumeLast } from './player/resume';
 import { startSyncLogBridge } from './sync/watch-log';
+import { startBtListener } from './bt/listen';
 
 /**
  * Create the main application window.
@@ -66,6 +67,7 @@ app.whenReady().then(() => {
   const stopIdle = startIdleLoop(() => BrowserWindow.getAllWindows()[0] ?? null);
   const stopPersist = startPositionPersistence();
   const stopSyncBridge = startSyncLogBridge(() => BrowserWindow.getAllWindows()[0] ?? null);
+  const stopBtListener = startBtListener(() => BrowserWindow.getAllWindows()[0] ?? null);
 
   // Resume is triggered in did-finish-load (see createWindow) so no audio plays before the UI
 
@@ -74,6 +76,7 @@ app.whenReady().then(() => {
     stopIdle();
     stopPersist();
     stopSyncBridge();
+    stopBtListener();
   });
 
   app.on('activate', () => {

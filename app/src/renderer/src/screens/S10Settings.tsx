@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useT } from '../i18n/I18nContext';
 import BackButton from '../components/BackButton';
 import Pressable from '../components/Pressable';
+import type { BtDevice } from '@shared/bt';
 
 interface S10Props {
   onBack: () => void;
@@ -84,6 +85,10 @@ export default function S10Settings({ onBack }: S10Props): React.JSX.Element {
   const [storedCurrentPin, setStoredCurrentPin] = useState('');
   const [pinMessage, setPinMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [rescanning, setRescanning] = useState(false);
+  const [btDevices, setBtDevices] = useState<BtDevice[]>([]);
+  const [btLoading, setBtLoading] = useState(true);
+  const [btRemoving, setBtRemoving] = useState<string | null>(null);
+  const [btRemoveConfirm, setBtRemoveConfirm] = useState<string | null>(null);
 
   useEffect(() => {
     void window.hoermond
@@ -92,6 +97,21 @@ export default function S10Settings({ onBack }: S10Props): React.JSX.Element {
         setMaxVolume(vol);
         setVolumeLoading(false);
       });
+  }, []);
+
+  // Load paired BT devices
+  useEffect(() => {
+    const loadBtDevices = async (): Promise<void> => {
+      try {
+        const res = await window.hoermond.invoke('bt:listPaired', undefined);
+        setBtDevices(res.devices);
+      } catch (err) {
+        console.error('[S10] loadBtDevices failed:', err);
+      } finally {
+        setBtLoading(false);
+      }
+    };
+    void loadBtDevices();
   }, []);
 
   const handleVolumeChange = (newVol: number): void => {
@@ -127,6 +147,23 @@ export default function S10Settings({ onBack }: S10Props): React.JSX.Element {
     setRescanning(true);
     await window.hoermond.invoke('library:rescan', undefined);
     setTimeout(() => setRescanning(false), 2000);
+  };
+
+  const handleRemoveDevice = async (mac: string): Promise<void> => {
+    setBtRemoving(mac);
+    try {
+      const res = await window.hoermond.invoke('bt:removeDevice', { mac });
+      if (res.ok) {
+        setBtDevices((prev) => prev.filter((d) => d.mac !== mac));
+      } else {
+        console.error('[S10] removeDevice failed for', mac);
+      }
+    } catch (err) {
+      console.error('[S10] removeDevice error:', err);
+    } finally {
+      setBtRemoving(null);
+      setBtRemoveConfirm(null);
+    }
   };
 
   const incrementVolume = (): void => handleVolumeChange(maxVolume + 5);
@@ -180,7 +217,30 @@ export default function S10Settings({ onBack }: S10Props): React.JSX.Element {
 
         <section className="s10-section">
           <h2 className="t-body s10-section-title">{t('settings.bluetooth')}</h2>
-          <p className="t-tiny s10-placeholder">{t('settings.bluetooth.placeholder')}</p>
+          {!btLoading && (
+            <>
+              {btDevices.length > 0 ? (
+                <div className="s10-bt-list">
+                  {btDevices.map((device) => (
+                    <div key={device.mac} className="s10-bt-device">
+                      <span className="s10-bt-device-name">{device.name}</span>
+                      <Pressable
+                        className="s10-bt-remove-btn"
+                        onTap={() => setBtRemoveConfirm(device.mac)}
+                        disabled={btRemoving === device.mac}
+                      >
+                        <span className="t-label">
+                          {btRemoving === device.mac ? '…' : t('bt.remove')}
+                        </span>
+                      </Pressable>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="t-tiny s10-placeholder">{t('bt.noDevice')}</p>
+              )}
+            </>
+          )}
         </section>
 
         <section className="s10-section">
@@ -206,6 +266,31 @@ export default function S10Settings({ onBack }: S10Props): React.JSX.Element {
           onComplete={handleNewPinEntered}
           onCancel={() => setPinStep('idle')}
         />
+      )}
+
+      {/* BT device removal confirmation */}
+      {btRemoveConfirm && (
+        <div className="s10-bt-confirm-overlay">
+          <div className="s10-bt-confirm-card">
+            <p className="t-body s10-bt-confirm-text">
+              {t('bt.removeConfirm')}
+            </p>
+            <div className="s10-bt-confirm-buttons">
+              <Pressable
+                className="s10-bt-confirm-cancel"
+                onTap={() => setBtRemoveConfirm(null)}
+              >
+                <span className="t-label">Abbrechen</span>
+              </Pressable>
+              <Pressable
+                className="s10-bt-confirm-ok"
+                onTap={() => void handleRemoveDevice(btRemoveConfirm)}
+              >
+                <span className="t-label">Löschen</span>
+              </Pressable>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
