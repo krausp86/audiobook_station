@@ -17,20 +17,27 @@ const MPD_PORT = Number(process.env['HOERMOND_MPD_PORT'] ?? 6600);
  * allowing long-lived idle blocking without blocking regular commands.
  *
  * @param getWindow callback to get the current BrowserWindow
+ * @param onPlayerEvent optional callback fired when player state changes (e.g., for display management)
  * @returns cleanup function to stop the idle loop
  */
-export function startIdleLoop(getWindow: () => BrowserWindow | null): () => void {
+export function startIdleLoop(
+  getWindow: () => BrowserWindow | null,
+  onPlayerEvent?: (status: 'playing' | 'paused' | 'stopped') => void,
+): () => void {
   let stopped = false;
   let sock: Socket | null = null;
   let backoff = 500;
 
   /**
    * Query current player state and send to renderer.
+   * Also notifies any registered player event callback.
    */
   const pushState = async (): Promise<void> => {
     try {
       const state = await getState();
       getWindow()?.webContents.send('player:state', state);
+      // Notify display manager and other services of player state changes
+      onPlayerEvent?.(state.status);
     } catch (err) {
       console.error('[idle] pushState failed:', err);
     }

@@ -10,6 +10,7 @@ import { startSyncLogBridge } from './sync/watch-log';
 import { startBtListener } from './bt/listen';
 import { initSleepTimer, stopSleepService } from './sleep/timer';
 import { initSyncState, handleSyncEvent, stopSyncService } from './sync/state';
+import { initDisplayManager, stopDisplayManager, onPlayerStateChange } from './display/manager';
 
 /**
  * Create the main application window.
@@ -65,8 +66,14 @@ app.whenReady().then(() => {
 
   const win = createWindow(dbError);
 
+  // Initialize display manager before starting idle loop (which will call onPlayerStateChange)
+  initDisplayManager(() => BrowserWindow.getAllWindows()[0] ?? null);
+
   // Start background services
-  const stopIdle = startIdleLoop(() => BrowserWindow.getAllWindows()[0] ?? null);
+  const stopIdle = startIdleLoop(
+    () => BrowserWindow.getAllWindows()[0] ?? null,
+    onPlayerStateChange,
+  );
   const stopPersist = startPositionPersistence();
   initSyncState(() => BrowserWindow.getAllWindows()[0] ?? null);
   const stopSyncBridge = startSyncLogBridge(
@@ -86,6 +93,7 @@ app.whenReady().then(() => {
     stopBtListener();
     stopSleepService();
     stopSyncService();
+    stopDisplayManager();
   });
 
   app.on('activate', () => {

@@ -12,6 +12,7 @@ import { getBtAdapter } from '../bt/adapter';
 import type { SleepMode } from '@shared/ipc-contract';
 import { startSleep, cancelSleep, getSleep } from '../sleep/timer';
 import { getSyncState, getSyncLog } from '../sync/state';
+import { onTouch } from '../display/manager';
 
 /**
  * Check if a PIN matches the stored PIN (with fallback to default '0000').
@@ -247,4 +248,9 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
 
   // sync:getLog — get the last (up to 10) sync log entries
   ipcMain.handle('sync:getLog', () => ({ entries: getSyncLog() }));
+
+  // display:touch — notify display manager of a touch event (fire-and-forget)
+  ipcMain.handle('display:touch', () => {
+    onTouch();
+  });
 }
