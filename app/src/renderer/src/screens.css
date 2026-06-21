@@ -89,6 +89,14 @@
   color: var(--text-on-flieder);
 }
 
+/* S1 Sync Status Icon (top right in logo area) */
+.s1-sync-icon {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Library Grid Screen */
 .grid-screen {
   width: 800px;
@@ -524,6 +532,11 @@
 
 .s5-bt-icon--disconnected {
   color: var(--text-secondary);
+}
+
+.s5-moon-icon--active {
+  opacity: 1;
+  color: var(--flieder-deep);
 }
 
 .s5-content {
@@ -1151,6 +1164,143 @@
   }
 }
 
+/* S8 Sleep Timer Dialog */
+.s8-scrim {
+  position: fixed;
+  inset: 0;
+  width: 800px;
+  height: 480px;
+  background: var(--scrim);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.s8-scrim.is-entered {
+  opacity: 1;
+}
+
+.s8-scrim.is-closing {
+  opacity: 0;
+  transition: opacity 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.s8-card {
+  position: relative;
+  min-width: 360px;
+  max-width: 500px;
+  background: var(--surface);
+  border-radius: 24px;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  transform: scale(0.96);
+  opacity: 0;
+  transition:
+    transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.s8-scrim.is-entered .s8-card {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.s8-title {
+  color: var(--text-primary);
+  margin: 0;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.s8-modes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.s8-mode-button {
+  min-height: 60px;
+  padding: 0 var(--space-3);
+  background: var(--flieder-tint);
+  color: var(--text-primary);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  transition: background-color 150ms ease;
+}
+
+.s8-mode-button--active {
+  background: var(--flieder-deep);
+  color: var(--text-on-deep);
+}
+
+.s8-cancel-button {
+  min-height: 60px;
+  padding: 0 var(--space-3);
+  background: var(--warning);
+  color: #ffffff;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  width: 100%;
+}
+
+.s8-hint {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0;
+  text-align: center;
+}
+
+/* S5 Sleep Countdown Display */
+.s5-sleep-countdown-container {
+  position: fixed;
+  top: 60px;
+  right: var(--safe-area);
+  z-index: 5;
+  pointer-events: auto;
+}
+
+.s5-sleep-countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 16px;
+  background: var(--flieder-deep);
+  color: var(--text-on-deep);
+  border-radius: 12px;
+  min-width: 100px;
+  cursor: pointer;
+}
+
+.s5-sleep-countdown-time {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+}
+
+.s5-sleep-countdown-label {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.9;
+  text-align: center;
+}
+
 /* S7 Bluetooth Dialog */
 .s7-scrim {
   position: fixed;
@@ -1412,4 +1562,264 @@
 .s10-bt-confirm-ok {
   background: var(--warning);
   color: #ffffff;
+}
+
+/* Cover Shimmer (M7 — during online-fetch, 1.2s per passage, ~30° gradient angle) */
+@keyframes cover-shimmer {
+  0% {
+    background-position: -200% 0%;
+  }
+  100% {
+    background-position: 200% 0%;
+  }
+}
+
+.cover-shimmer {
+  animation: cover-shimmer 1.2s ease-in-out infinite;
+}
+
+/* Respect prefers-reduced-motion: static shimmer, no animation */
+@media (prefers-reduced-motion: reduce) {
+  .cover-shimmer {
+    animation: none;
+    background: linear-gradient(30deg, transparent 30%, rgba(255, 255, 255, 0.4) 50%, transparent 70%) !important;
+    background-position: 0% 0% !important;
+  }
+}
+
+/* Sync Status Icon (T7.C11) */
+
+@keyframes sync-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sync-status-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  flex-shrink: 0;
+  color: var(--text-primary);
+}
+
+.sync-status-icon--idle {
+  color: var(--success);
+}
+
+.sync-status-icon--running {
+  color: var(--info);
+}
+
+.sync-status-icon--error {
+  color: var(--warning);
+}
+
+.sync-status-icon-svg {
+  width: 24px;
+  height: 24px;
+}
+
+.sync-status-icon-svg--spinning {
+  animation: sync-spin 1.4s linear infinite;
+}
+
+/* Respect prefers-reduced-motion: disable spinning */
+@media (prefers-reduced-motion: reduce) {
+  .sync-status-icon-svg--spinning {
+    animation: none;
+  }
+}
+
+/* Sync Details Overlay (error tap) */
+
+.sync-details-scrim {
+  position: absolute;
+  inset: 0;
+  width: 800px;
+  height: 480px;
+  background: var(--scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+}
+
+.sync-details-scrim.is-entered {
+  opacity: 1;
+}
+
+.sync-details-scrim.is-closing {
+  opacity: 0;
+  transition: opacity 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sync-details-card {
+  position: relative;
+  min-width: 360px;
+  max-width: 600px;
+  background: var(--surface);
+  border-radius: 24px;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  transform: scale(0.96);
+  opacity: 0;
+  transition:
+    transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sync-details-scrim.is-entered .sync-details-card {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.sync-details-title {
+  color: var(--text-primary);
+  margin: 0 0 var(--space-1) 0;
+  align-self: center;
+}
+
+.sync-details-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.sync-details-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.sync-details-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sync-details-value {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.sync-details-message {
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: var(--space-1);
+  background: rgba(168, 95, 12, 0.05);
+  border-left: 3px solid var(--warning);
+  border-radius: 4px;
+  word-wrap: break-word;
+}
+
+.sync-details-empty {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: var(--space-2) 0;
+}
+
+.sync-details-close-button {
+  align-self: center;
+  margin-top: var(--space-1);
+  color: var(--flieder-deep);
+  font-weight: 600;
+  padding: 8px 16px;
+}
+
+/* S10 Sync-Log-Ansicht (T7.C12) */
+
+.s10-synclog-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: var(--space-1);
+}
+
+.s10-synclog-entry {
+  padding: var(--space-2);
+  border-radius: 8px;
+  background: var(--parent-bg, #F3F4F6);
+  border-left: 4px solid var(--parent-accent, #374151);
+}
+
+.s10-synclog-entry--error {
+  background: rgba(168, 95, 12, 0.08);
+  border-left-color: var(--warning, #A85F0C);
+}
+
+.s10-synclog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.s10-synclog-phase {
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.s10-synclog-entry--error .s10-synclog-phase {
+  color: var(--warning, #A85F0C);
+}
+
+.s10-synclog-timestamp {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.s10-synclog-message {
+  color: var(--text-primary);
+  font-size: 12px;
+  margin: 0;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+/* WakeGuard: Display wake fade-in overlay */
+.wake-fade {
+  position: fixed;
+  inset: 0;
+  width: 800px;
+  height: 480px;
+  background: #000000;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 300ms ease-out;
+  z-index: 9999;
+}
+
+.wake-fade--visible {
+  opacity: 0;
+}
+
+/* Respect prefers-reduced-motion: no transition, instant visibility */
+@media (prefers-reduced-motion: reduce) {
+  .wake-fade {
+    transition: none;
+  }
+
+  .wake-fade--visible {
+    opacity: 0;
+  }
 }
