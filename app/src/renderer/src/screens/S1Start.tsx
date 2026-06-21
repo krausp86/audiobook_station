@@ -1,6 +1,7 @@
 import { useT } from '../i18n/I18nContext';
 import Logo from '../components/Logo';
 import Pressable from '../components/Pressable';
+import SyncStatusIcon from '../components/SyncStatusIcon';
 import { useParentGate } from '../hooks/useParentGate';
 
 /**
@@ -45,6 +46,9 @@ export default function S1Start({ onChoose, onOpenParentGate }: S1Props): React.
           )}
         </div>
         <span className="t-label s1-wordmark">{t('app.name')}</span>
+        <div className="s1-sync-icon">
+          <SyncStatusIcon />
+        </div>
       </header>
       <div className="s1-choices">
         <Pressable className="s1-tile s1-tile--audiobooks" onTap={() => onChoose('audiobook')}>

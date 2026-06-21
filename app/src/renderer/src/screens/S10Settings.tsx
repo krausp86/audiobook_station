@@ -3,6 +3,7 @@ import { useT } from '../i18n/I18nContext';
 import BackButton from '../components/BackButton';
 import Pressable from '../components/Pressable';
 import type { BtDevice } from '@shared/bt';
+import type { SyncLogEntry } from '@shared/ipc-contract';
 
 interface S10Props {
   onBack: () => void;
@@ -11,6 +12,22 @@ interface S10Props {
 type PinStep = 'idle' | 'enter-current' | 'enter-new';
 
 const PAD_DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+
+/**
+ * Formatiert einen ISO-8601-Timestamp zu "DD.MM. HH:mm"
+ */
+function formatSyncTimestamp(iso: string): string {
+  try {
+    const date = new Date(iso);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const mins = String(date.getMinutes()).padStart(2, '0');
+    return `${day}.${month}. ${hours}:${mins}`;
+  } catch (e) {
+    return iso;
+  }
+}
 
 function PinPad({
   label,
@@ -89,6 +106,7 @@ export default function S10Settings({ onBack }: S10Props): React.JSX.Element {
   const [btLoading, setBtLoading] = useState(true);
   const [btRemoving, setBtRemoving] = useState<string | null>(null);
   const [btRemoveConfirm, setBtRemoveConfirm] = useState<string | null>(null);
+  const [syncLog, setSyncLog] = useState<SyncLogEntry[]>([]);
 
   useEffect(() => {
     void window.hoermond
@@ -112,6 +130,27 @@ export default function S10Settings({ onBack }: S10Props): React.JSX.Element {
       }
     };
     void loadBtDevices();
+  }, []);
+
+  // Load sync log on mount and subscribe to sync state changes
+  useEffect(() => {
+    const loadSyncLog = async (): Promise<void> => {
+      try {
+        const res = await window.hoermond.invoke('sync:getLog', undefined);
+        setSyncLog(res.entries);
+      } catch (err) {
+        console.error('[S10] loadSyncLog failed:', err);
+      }
+    };
+
+    void loadSyncLog();
+
+    // Subscribe to sync state changes to refresh log
+    const unsubscribe = window.hoermond.on('sync:state', () => {
+      void loadSyncLog();
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const handleVolumeChange = (newVol: number): void => {
@@ -244,8 +283,31 @@ export default function S10Settings({ onBack }: S10Props): React.JSX.Element {
         </section>
 
         <section className="s10-section">
-          <h2 className="t-body s10-section-title">{t('settings.syncLog')}</h2>
-          <p className="t-tiny s10-placeholder">{t('settings.syncLog.placeholder')}</p>
+          <h2 className="t-body s10-section-title">{t('sync.log.title')}</h2>
+          {syncLog.length === 0 ? (
+            <p className="t-tiny s10-placeholder">{t('sync.log.empty')}</p>
+          ) : (
+            <div className="s10-synclog-list">
+              {syncLog.map((entry, idx) => (
+                <div
+                  key={`${idx}-${entry.ts}`}
+                  className={`s10-synclog-entry s10-synclog-entry--${entry.phase}`}
+                >
+                  <div className="s10-synclog-header">
+                    <span className="s10-synclog-phase">
+                      {t(`sync.log.${entry.phase}`)}
+                    </span>
+                    <span className="s10-synclog-timestamp">
+                      {formatSyncTimestamp(entry.ts)}
+                    </span>
+                  </div>
+                  {entry.message && (
+                    <p className="t-tiny s10-synclog-message">{entry.message}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
 

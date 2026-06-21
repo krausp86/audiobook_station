@@ -9,14 +9,16 @@ import type { MediaItem } from '@shared/ipc-contract';
  * - 0% < progress < 100%: progress ring (6px, bottom) + play-arrow badge (top-right)
  * - progress = 100%: check-mark badge (top-right), no ring
  * - progress = 0%: no indicators
+ * - loading: optional shimmer overlay on cover during online-fetch (M7 — T7.C10)
  */
 interface MediaTileProps {
   item: MediaItem;
+  loading?: boolean;
   onTap: (item: MediaItem) => void;
   onLongPress: (item: MediaItem) => void;
 }
 
-export default function MediaTile({ item, onTap, onLongPress }: MediaTileProps): React.JSX.Element {
+export default function MediaTile({ item, loading, onTap, onLongPress }: MediaTileProps): React.JSX.Element {
   const t = useT();
   const inProgress = item.progressPercent > 0 && item.progressPercent < 100;
   const done = item.progressPercent >= 100;
@@ -36,7 +38,7 @@ export default function MediaTile({ item, onTap, onLongPress }: MediaTileProps):
       onPointerLeave={lp.onPointerLeave}
     >
       <div className="tile-cover">
-        <Cover title={item.title} coverPath={item.coverPath} size={180} />
+        <Cover title={item.title} coverPath={item.coverPath} size={180} loading={loading} />
 
         {/* Weiterhören-Badge: Pfeil-im-Kreis, oben rechts */}
         {inProgress && (

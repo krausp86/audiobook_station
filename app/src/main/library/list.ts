@@ -179,11 +179,12 @@ export async function listLibrary(
 
   const result = sortLibrary(items);
 
-  // Fast path: resolve covers synchronously (local + cache only, no network)
-  for (const item of [...result.recentlyPlayed, ...result.all]) {
-    const coverPath = await resolveCoverSync(item);
-    if (coverPath) {
-      item.coverPath = coverPath;
+  // Fast path: resolve covers in parallel (local + cache only, no network)
+  const allItems = [...result.recentlyPlayed, ...result.all];
+  const coverResults = await Promise.all(allItems.map((item) => resolveCoverSync(item)));
+  for (let i = 0; i < allItems.length; i++) {
+    if (coverResults[i]) {
+      allItems[i].coverPath = coverResults[i] ?? undefined;
     }
   }
 

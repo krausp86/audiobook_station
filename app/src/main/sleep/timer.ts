@@ -223,24 +223,16 @@ function startTickLoop(): void {
         return;
       }
 
-      // Check if user has manually paused/stopped the media
+      // Check player status: only cancel on stop, keep running on pause
       const playerState = await getState();
-      if (playerState.status !== 'playing') {
-        // If user paused/stopped, cancel the timer silently
+      if (playerState.status === 'stopped') {
         await handleTimerCancellation();
         return;
       }
 
-      // Handle fade-out: 60 seconds before the end
-      if (remainingMs <= FADE_OUT_DURATION_MS) {
+      // Fade-out only while actually playing (skip when paused)
+      if (remainingMs <= FADE_OUT_DURATION_MS && playerState.status === 'playing') {
         handleFadeOut(remainingMs);
-      } else {
-        // Fade is done or not yet started; ensure volume is restored
-        if (state.fadeStartVolume !== null && remainingMs > FADE_OUT_DURATION_MS) {
-          // Already passed fade window, restore to original volume
-          // (This handles the case where we skipped the fade due to timing)
-          await setVolume(state.fadeStartVolume);
-        }
       }
     } catch (err) {
       console.error('[sleep] tick loop error:', err);

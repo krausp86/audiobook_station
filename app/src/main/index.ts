@@ -75,13 +75,15 @@ app.whenReady().then(() => {
     onPlayerStateChange,
   );
   const stopPersist = startPositionPersistence();
-  initSyncState(() => BrowserWindow.getAllWindows()[0] ?? null);
+  if (!dbError) {
+    initSyncState(() => BrowserWindow.getAllWindows()[0] ?? null);
+    initSleepTimer(() => BrowserWindow.getAllWindows()[0] ?? null);
+  }
   const stopSyncBridge = startSyncLogBridge(
     () => BrowserWindow.getAllWindows()[0] ?? null,
-    handleSyncEvent,
+    !dbError ? handleSyncEvent : undefined,
   );
   const stopBtListener = startBtListener(() => BrowserWindow.getAllWindows()[0] ?? null);
-  initSleepTimer(() => BrowserWindow.getAllWindows()[0] ?? null);
 
   // Resume is triggered in did-finish-load (see createWindow) so no audio plays before the UI
 

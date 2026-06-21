@@ -6,6 +6,7 @@ import BackButton from '../components/BackButton';
 import Pressable from '../components/Pressable';
 import S6Chapters from './S6Chapters';
 import S7Bluetooth from './S7Bluetooth';
+import S8SleepTimer from './S8SleepTimer';
 import type { MediaItem, PlayerState } from '@shared/ipc-contract';
 
 /**
@@ -36,6 +37,9 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
   const [btOpen, setBtOpen] = useState(false);
   const [btConnected, setBtConnected] = useState(false);
   const [atMaxVolume, setAtMaxVolume] = useState(false);
+  const [sleepOpen, setSleepOpen] = useState(false);
+  const [sleepRemainingMs, setSleepRemainingMs] = useState<number | null>(null);
+  const sleepActive = sleepRemainingMs !== null;
   const lastRequestedVolumeRef = useRef<number | null>(null);
 
   // Load initial player state and subscribe to updates
@@ -59,6 +63,16 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
       setBtConnected(e.device !== null),
     );
     return () => { clearTimeout(retry); off(); };
+  }, []);
+
+  // Load sleep timer state and subscribe to countdown updates
+  useEffect(() => {
+    void window.hoermond.invoke('sleep:get', undefined).then((s) => {
+      setSleepRemainingMs(s.active && s.endsAt ? s.endsAt - Date.now() : s.active ? 1 : null);
+    });
+    const offTick = window.hoermond.on('sleep:tick', (e) => setSleepRemainingMs(e.remainingMs));
+    const offEnd = window.hoermond.on('sleep:ended', () => setSleepRemainingMs(null));
+    return () => { offTick(); offEnd(); };
   }, []);
 
   // Auto-play ONCE on mount if not already playing this item.
@@ -102,6 +116,17 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
     return undefined;
   }, [playerState]);
 
+  // Client-side countdown tick: decrement sleep remaining time locally every second.
+  // `sleep:tick` from server acts as authoritative correction.
+  useEffect(() => {
+    if (sleepRemainingMs === null) return;
+    const id = setInterval(() => {
+      setSleepRemainingMs((prev) => (prev !== null ? Math.max(0, prev - 1000) : null));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [sleepRemainingMs !== null]);
+
+  // Player position tick: increment locally during playback.
   useEffect(() => {
     if (playerState?.status !== 'playing') return;
     const id = setInterval(() => {
@@ -221,15 +246,17 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
             )}
           </Pressable>
 
-          {/* Moon icon (placeholder, no function) */}
-          <svg
-            className="s5-titlebar-icon"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            aria-hidden="true"
-          >
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-          </svg>
+          {/* Moon icon — opens S8 Sleep Timer */}
+          <Pressable onTap={() => setSleepOpen(true)} ariaLabel={t('sleep.icon')}>
+            <svg
+              className={`s5-titlebar-icon${sleepActive ? ' s5-moon-icon--active' : ''}`}
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          </Pressable>
         </div>
       </div>
 
@@ -241,7 +268,7 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
             {item.coverPath && (
               <img
                 className="s5-cover-image"
-                src={`file://${item.coverPath}`}
+                src={item.coverPath.startsWith('file://') ? item.coverPath : `file://${item.coverPath}`}
                 alt={item.title}
               />
             )}
@@ -308,6 +335,40 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
           onClose={() => setBtOpen(false)}
         />
       )}
+
+      {/* S8 Sleep Timer overlay */}
+      {sleepOpen && (
+        <S8SleepTimer onClose={() => setSleepOpen(false)} />
+      )}
+
+      {/* Sleep Countdown Display (always visible when timer active) */}
+      {sleepRemainingMs !== null && (
+        <div className="s5-sleep-countdown-container">
+          <Pressable
+            className="s5-sleep-countdown"
+            onTap={() => { void window.hoermond.invoke('sleep:cancel', undefined); }}
+            ariaLabel={t('sleep.countdown.tapToCancel')}
+          >
+            <div className="s5-sleep-countdown-time">
+              {formatCountdown(sleepRemainingMs)}
+            </div>
+            <div className="s5-sleep-countdown-label">
+              {t('sleep.countdown.label')}
+            </div>
+          </Pressable>
+        </div>
+      )}
     </div>
   );
+}
+
+/**
+ * Format milliseconds as mm:ss countdown display.
+ * Example: 65500ms → "01:05"
+ */
+function formatCountdown(ms: number): string {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
