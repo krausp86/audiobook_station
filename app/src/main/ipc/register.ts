@@ -2,13 +2,15 @@ import { ipcMain, app, type BrowserWindow } from 'electron';
 import type Database from 'better-sqlite3';
 import { play, pause, stop, seek, seekRelative, setVolume, getState } from '../mpd/control';
 import { chapterNext, chapterPrev, chapterGoto } from '../mpd/chapters';
-import { listLibrary } from '../library/list';
+import { listLibrary, resetCoverFetchState } from '../library/list';
 import { getMpd } from '../mpd';
 import { getDb } from '../db';
 import { getOnboardingSeen, setOnboardingSeen, upsertPosition, getLatestPosition, setLastStatus, getMaxVolume, setMaxVolume, getPinHash, setPinHash } from '../db/dao';
 import { saveNow } from '../player/persist';
 import { hashPin, verifyPin, isValidPinFormat } from '../security/pin';
 import { getBtAdapter } from '../bt/adapter';
+import type { SleepMode } from '@shared/ipc-contract';
+import { startSleep, cancelSleep, getSleep } from '../sleep/timer';
 
 /**
  * Check if a PIN matches the stored PIN (with fallback to default '0000').
@@ -129,10 +131,12 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
   ipcMain.handle('player:getState', () => getState());
 
   // library:list — get organized library (recentlyPlayed + all)
-  ipcMain.handle('library:list', () => listLibrary());
+  // Includes fast-path cover resolution (local + cache); background fetches for missing covers
+  ipcMain.handle('library:list', () => listLibrary(getWindow));
 
   // library:rescan — trigger MPD database update
   ipcMain.handle('library:rescan', async () => {
+    resetCoverFetchState();
     const mpd = await getMpd();
     await mpd.send('update');
     // library:updated will be pushed by idle-Loop when database update completes
@@ -227,4 +231,13 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
 
   // bt:removeDevice — unpair a Bluetooth device
   ipcMain.handle('bt:removeDevice', (_e, p: { mac: string }) => getBtAdapter().remove(p.mac));
+
+  // sleep:start — start the sleep timer
+  ipcMain.handle('sleep:start', (_e, p: { mode: SleepMode }) => startSleep(p.mode));
+
+  // sleep:cancel — cancel the running sleep timer
+  ipcMain.handle('sleep:cancel', () => cancelSleep());
+
+  // sleep:get — get current sleep timer state
+  ipcMain.handle('sleep:get', () => getSleep());
 }
