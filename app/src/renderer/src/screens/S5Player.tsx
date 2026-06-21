@@ -247,7 +247,11 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
           </Pressable>
 
           {/* Moon icon — opens S8 Sleep Timer */}
-          <Pressable onTap={() => setSleepOpen(true)} ariaLabel={t('sleep.icon')}>
+          <Pressable
+            className="s5-bt-icon"
+            onTap={() => setSleepOpen(true)}
+            ariaLabel={t('sleep.icon')}
+          >
             <svg
               className={`s5-titlebar-icon${sleepActive ? ' s5-moon-icon--active' : ''}`}
               viewBox="0 0 24 24"
