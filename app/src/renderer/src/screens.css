@@ -246,7 +246,7 @@
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity var(--t-scrim) var(--t-overlay-easing);
 }
 
 .s4-scrim.is-entered {
@@ -255,7 +255,7 @@
 
 .s4-scrim.is-closing {
   opacity: 0;
-  transition: opacity 160ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity var(--t-overlay-out) var(--t-overlay-easing);
 }
 
 .s4-card {
@@ -272,8 +272,8 @@
   transform: scale(0.96);
   opacity: 0;
   transition:
-    transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 220ms cubic-bezier(0.4, 0, 0.2, 1);
+    transform var(--t-overlay-in) var(--t-overlay-easing),
+    opacity var(--t-overlay-in) var(--t-overlay-easing);
 }
 
 .s4-scrim.is-entered .s4-card {
@@ -634,7 +634,7 @@
   background: var(--scrim);
   z-index: 10;
   opacity: 0;
-  transition: opacity 200ms ease;
+  transition: opacity var(--t-scrim) var(--t-overlay-easing);
 }
 
 .s6-scrim.is-entered {
@@ -643,7 +643,7 @@
 
 .s6-scrim.is-closing {
   opacity: 0;
-  transition: opacity 160ms ease;
+  transition: opacity var(--t-overlay-out) var(--t-overlay-easing);
 }
 
 .s6-sheet {
@@ -660,7 +660,7 @@
   flex-direction: column;
   z-index: 11;
   transform: translateY(100%);
-  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform var(--t-overlay-in) cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
 }
 
@@ -670,7 +670,7 @@
 
 .s6-scrim.is-closing .s6-sheet {
   transform: translateY(100%);
-  transition: transform 200ms cubic-bezier(0.4, 0, 1, 1);
+  transition: transform var(--t-overlay-out) cubic-bezier(0.4, 0, 1, 1);
 }
 
 .s6-header {
@@ -827,7 +827,7 @@
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity var(--t-scrim) var(--t-overlay-easing);
 }
 
 .s9-scrim.is-entered {
@@ -836,7 +836,7 @@
 
 .s9-scrim.is-closing {
   opacity: 0;
-  transition: opacity 160ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity var(--t-overlay-out) var(--t-overlay-easing);
 }
 
 .s9-card {
@@ -853,8 +853,8 @@
   transform: scale(0.96);
   opacity: 0;
   transition:
-    transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 220ms cubic-bezier(0.4, 0, 0.2, 1);
+    transform var(--t-overlay-in) var(--t-overlay-easing),
+    opacity var(--t-overlay-in) var(--t-overlay-easing);
 }
 
 .s9-scrim.is-entered .s9-card {
@@ -891,6 +891,14 @@
 
 .s9-dots.is-wrong {
   animation: s9-shake 200ms ease-in-out;
+}
+
+/* Respect prefers-reduced-motion: no shake animation (WCAG 2.3.1) */
+@media (prefers-reduced-motion: reduce) {
+  .s9-dots.is-wrong {
+    animation: none;
+    transform: translateX(0);
+  }
 }
 
 .s9-dot {
@@ -1130,7 +1138,7 @@
 }
 
 .toast--in {
-  animation: toast-slide-in 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: toast-slide-in var(--t-toast-in) var(--t-overlay-easing) forwards;
 }
 
 .toast--visible {
@@ -1139,7 +1147,7 @@
 }
 
 .toast--out {
-  animation: toast-slide-out 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: toast-slide-out var(--t-toast-out) var(--t-overlay-easing) forwards;
 }
 
 @keyframes toast-slide-in {
@@ -1176,7 +1184,7 @@
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity var(--t-scrim) var(--t-overlay-easing);
 }
 
 .s8-scrim.is-entered {
@@ -1185,7 +1193,7 @@
 
 .s8-scrim.is-closing {
   opacity: 0;
-  transition: opacity 160ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity var(--t-overlay-out) var(--t-overlay-easing);
 }
 
 .s8-card {
@@ -1202,8 +1210,8 @@
   transform: scale(0.96);
   opacity: 0;
   transition:
-    transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 220ms cubic-bezier(0.4, 0, 0.2, 1);
+    transform var(--t-overlay-in) var(--t-overlay-easing),
+    opacity var(--t-overlay-in) var(--t-overlay-easing);
 }
 
 .s8-scrim.is-entered .s8-card {
@@ -1313,7 +1321,7 @@
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity var(--t-scrim) var(--t-overlay-easing);
 }
 
 .s7-scrim.is-entered {
@@ -1322,7 +1330,7 @@
 
 .s7-scrim.is-closing {
   opacity: 0;
-  transition: opacity 160ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity var(--t-overlay-out) var(--t-overlay-easing);
 }
 
 .s7-card {
@@ -1336,8 +1344,8 @@
   transform: scale(0.96);
   opacity: 0;
   transition:
-    transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 220ms cubic-bezier(0.4, 0, 0.2, 1);
+    transform var(--t-overlay-in) var(--t-overlay-easing),
+    opacity var(--t-overlay-in) var(--t-overlay-easing);
 }
 
 .s7-scrim.is-entered .s7-card {
@@ -1564,7 +1572,7 @@
   color: #ffffff;
 }
 
-/* Cover Shimmer (M7 — during online-fetch, 1.2s per passage, ~30° gradient angle) */
+/* Cover Shimmer (M7 — during online-fetch, 1 passage / 1.2s, ~30° gradient angle) */
 @keyframes cover-shimmer {
   0% {
     background-position: -200% 0%;
@@ -1575,10 +1583,10 @@
 }
 
 .cover-shimmer {
-  animation: cover-shimmer 1.2s ease-in-out infinite;
+  animation: cover-shimmer var(--t-cover-shimmer) var(--t-cover-shimmer-easing) infinite;
 }
 
-/* Respect prefers-reduced-motion: static shimmer, no animation */
+/* Respect prefers-reduced-motion: static shimmer, no animation (WCAG 2.3.1) */
 @media (prefers-reduced-motion: reduce) {
   .cover-shimmer {
     animation: none;
@@ -1587,7 +1595,7 @@
   }
 }
 
-/* Sync Status Icon (T7.C11) */
+/* Sync Status Icon (T7.C11) — 360° / 1.4s linear endlos */
 
 @keyframes sync-spin {
   to {
@@ -1624,17 +1632,17 @@
 }
 
 .sync-status-icon-svg--spinning {
-  animation: sync-spin 1.4s linear infinite;
+  animation: sync-spin var(--t-sync-spin) linear infinite;
 }
 
-/* Respect prefers-reduced-motion: disable spinning */
+/* Respect prefers-reduced-motion: disable spinning (WCAG 2.3.1) */
 @media (prefers-reduced-motion: reduce) {
   .sync-status-icon-svg--spinning {
     animation: none;
   }
 }
 
-/* Sync Details Overlay (error tap) */
+/* Sync Details Overlay (error tap) — follows §4.2 overlay pattern */
 
 .sync-details-scrim {
   position: absolute;
@@ -1646,7 +1654,7 @@
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity var(--t-scrim) var(--t-overlay-easing);
   z-index: 1000;
 }
 
@@ -1656,7 +1664,7 @@
 
 .sync-details-scrim.is-closing {
   opacity: 0;
-  transition: opacity 160ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity var(--t-overlay-out) var(--t-overlay-easing);
 }
 
 .sync-details-card {
@@ -1673,8 +1681,8 @@
   transform: scale(0.96);
   opacity: 0;
   transition:
-    transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 220ms cubic-bezier(0.4, 0, 0.2, 1);
+    transform var(--t-overlay-in) var(--t-overlay-easing),
+    opacity var(--t-overlay-in) var(--t-overlay-easing);
 }
 
 .sync-details-scrim.is-entered .sync-details-card {
@@ -1796,7 +1804,7 @@
   line-height: 1.4;
 }
 
-/* WakeGuard: Display wake fade-in overlay */
+/* WakeGuard: Display wake fade-in overlay (§4.2: 300ms) */
 .wake-fade {
   position: fixed;
   inset: 0;
@@ -1805,7 +1813,7 @@
   background: #000000;
   pointer-events: none;
   opacity: 1;
-  transition: opacity 300ms ease-out;
+  transition: opacity var(--t-wake-fade) var(--t-wake-easing);
   z-index: 9999;
 }
 
@@ -1813,7 +1821,7 @@
   opacity: 0;
 }
 
-/* Respect prefers-reduced-motion: no transition, instant visibility */
+/* Respect prefers-reduced-motion: no transition, instant visibility (WCAG 2.3.1) */
 @media (prefers-reduced-motion: reduce) {
   .wake-fade {
     transition: none;

@@ -29,11 +29,31 @@
   --safe-area: 20px;
   --titlebar-h: 44px;
 
-  /* Timing */
+  /* Timing (§4.2) */
+  /* Base easing curve */
   --t-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   --t-base-dur: 200ms;
+  /* Pressable feedback: 90ms in / 120ms out, scale 0.96 */
   --t-press-in: 90ms;
   --t-press-out: 120ms;
+  /* Overlay/Dialog: enter 220ms (fade + scale 0.96→1.0) / exit 160ms fade */
+  --t-overlay-in: 220ms;
+  --t-overlay-out: 160ms;
+  --t-overlay-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Scrim (background): 200ms fade in/out */
+  --t-scrim: 200ms;
+  /* Toast: in 200ms / visible 3500ms / out 200ms */
+  --t-toast-in: 200ms;
+  --t-toast-visible: 3500ms;
+  --t-toast-out: 200ms;
+  /* Screen wake fade-in: 300ms (WakeGuard) */
+  --t-wake-fade: 300ms;
+  --t-wake-easing: ease-out;
+  /* Cover shimmer: 1 passage / 1.2s, ~30° */
+  --t-cover-shimmer: 1.2s;
+  --t-cover-shimmer-easing: ease-in-out;
+  /* Sync icon spin: 360° / 1.4s linear endless */
+  --t-sync-spin: 1.4s;
 }
 
 * {
