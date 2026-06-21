@@ -66,9 +66,9 @@ export function startBtListener(
     if (stopped) return;
 
     try {
-      // stdbuf -oL forces line-buffered stdout so events arrive immediately
-      // (without TTY, bluetoothctl fully buffers its output)
-      proc = spawn('stdbuf', ['-oL', 'bluetoothctl'], {
+      // script provides a pseudo-TTY so bluetoothctl outputs events in real-time
+      // (without TTY, bluetoothctl buffers output and may exit immediately)
+      proc = spawn('script', ['-qf', '-c', 'bluetoothctl', '/dev/null'], {
         stdio: ['pipe', 'pipe', 'pipe'],
       });
 

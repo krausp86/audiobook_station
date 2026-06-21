@@ -201,14 +201,30 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
   ipcMain.handle('bt:pair', (_e, p: { mac: string }) => getBtAdapter().pair(p.mac));
 
   // bt:connect — connect to a paired Bluetooth device
-  ipcMain.handle('bt:connect', (_e, p: { mac: string }) => getBtAdapter().connect(p.mac));
+  ipcMain.handle('bt:connect', async (_e, p: { mac: string }) => {
+    const result = await getBtAdapter().connect(p.mac);
+    if (result.ok) {
+      const status = await getBtAdapter().getStatus();
+      getWindow()?.webContents.send('bt:connection', {
+        device: status.connected ?? null,
+        event: 'connected',
+      });
+    }
+    return result;
+  });
 
   // bt:disconnect — disconnect from a Bluetooth device
-  ipcMain.handle('bt:disconnect', (_e, p: { mac: string }) => getBtAdapter().disconnect(p.mac));
+  ipcMain.handle('bt:disconnect', async (_e, p: { mac: string }) => {
+    const result = await getBtAdapter().disconnect(p.mac);
+    if (result.ok) {
+      getWindow()?.webContents.send('bt:connection', {
+        device: null,
+        event: 'disconnected',
+      });
+    }
+    return result;
+  });
 
   // bt:removeDevice — unpair a Bluetooth device
   ipcMain.handle('bt:removeDevice', (_e, p: { mac: string }) => getBtAdapter().remove(p.mac));
-
-  // unused: suppress warning
-  void getWindow;
 }

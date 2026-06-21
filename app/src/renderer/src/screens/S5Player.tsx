@@ -47,13 +47,18 @@ export default function S5Player({ item, onBack }: S5PlayerProps): React.JSX.Ele
 
   // Load BT status and subscribe to connection events
   useEffect(() => {
-    void window.hoermond
-      .invoke('bt:getStatus', undefined)
-      .then((s) => setBtConnected(s.connected !== null));
+    const loadBt = (): void => {
+      void window.hoermond
+        .invoke('bt:getStatus', undefined)
+        .then((s) => setBtConnected(s.connected !== null));
+    };
+    loadBt();
+    // Retry once after 2s — at boot, BT may still be connecting
+    const retry = setTimeout(loadBt, 2000);
     const off = window.hoermond.on('bt:connection', (e) =>
       setBtConnected(e.device !== null),
     );
-    return () => off();
+    return () => { clearTimeout(retry); off(); };
   }, []);
 
   // Auto-play ONCE on mount if not already playing this item.
