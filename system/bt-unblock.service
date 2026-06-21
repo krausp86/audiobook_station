@@ -1,0 +1,10 @@
+[Unit]
+Description=Unblock Bluetooth at boot
+Before=bluetooth.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/rfkill unblock bluetooth
+
+[Install]
+WantedBy=multi-user.target
