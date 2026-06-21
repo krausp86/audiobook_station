@@ -66,7 +66,9 @@ export function startBtListener(
     if (stopped) return;
 
     try {
-      proc = spawn('bluetoothctl', [], {
+      // stdbuf -oL forces line-buffered stdout so events arrive immediately
+      // (without TTY, bluetoothctl fully buffers its output)
+      proc = spawn('stdbuf', ['-oL', 'bluetoothctl'], {
         stdio: ['pipe', 'pipe', 'pipe'],
       });
 
@@ -113,7 +115,13 @@ export function startBtListener(
     }
   };
 
-  connect();
+  // Initialize lastConnectedMac from current state to avoid false event on startup
+  void getBtAdapter().getStatus().then((s) => {
+    lastConnectedMac = s.connected?.mac ?? null;
+    connect();
+  }).catch(() => {
+    connect();
+  });
 
   return () => {
     stopped = true;
