@@ -42,7 +42,7 @@ class BtAdapter {
     try {
       // Check if powered on
       const { stdout: showOut } = await execFileAsync('bluetoothctl', ['show']);
-      const poweredOn = /^Powered:\s+yes/m.test(showOut);
+      const poweredOn = /^\s*Powered:\s+yes/m.test(showOut);
 
       if (!poweredOn) {
         return { poweredOn: false, connected: null };
@@ -58,7 +58,7 @@ class BtAdapter {
             'info',
             device.mac,
           ]);
-          const connected = /^Connected:\s+yes/m.test(infoOut);
+          const connected = /^\s*Connected:\s+yes/m.test(infoOut);
           if (connected) {
             connectedDevice = { ...device, connected: true };
             break;
