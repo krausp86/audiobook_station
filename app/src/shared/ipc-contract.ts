@@ -39,6 +39,22 @@ export interface SyncStatus {
   message?: string;
 }
 
+/** Schlaf-Timer-Modus. */
+export type SleepMode = 'min15' | 'min30' | 'min60' | 'chapterEnd';
+
+/** Aggregierter Sync-Gesamtstatus für das Titelleisten-Icon. */
+export type SyncState = 'idle' | 'running' | 'error';
+
+/** Ein Eintrag im Sync-Log (für S10-Ansicht). */
+export interface SyncLogEntry {
+  phase: 'started' | 'completed' | 'error';
+  ts: string;        // ISO-8601
+  message?: string;
+}
+
+/** Cover-Fetch-Status für ein Medium (Shimmer-Steuerung). */
+export type CoverPhase = 'pending' | 'ready' | 'failed';
+
 /** Commands: Renderer -> Main (Request/Response, via ipcRenderer.invoke). */
 export interface IpcCommands {
   'app:getVersion': {
@@ -149,6 +165,30 @@ export interface IpcCommands {
     request: { mac: string };
     response: { ok: boolean };
   };
+  'sleep:start': {
+    request: { mode: SleepMode };
+    response: { ok: boolean; endsAt: number | null };
+  };
+  'sleep:cancel': {
+    request: void;
+    response: { ok: boolean };
+  };
+  'sleep:get': {
+    request: void;
+    response: { active: boolean; endsAt: number | null; mode: SleepMode | null };
+  };
+  'sync:getState': {
+    request: void;
+    response: { state: SyncState };
+  };
+  'sync:getLog': {
+    request: void;
+    response: { entries: SyncLogEntry[] };
+  };
+  'display:touch': {
+    request: void;
+    response: void;
+  };
 }
 
 /** Events: Main -> Renderer (push, via webContents.send). */
@@ -159,6 +199,11 @@ export interface IpcEvents {
   'library:updated': { ts: number };
   'sync:status': SyncStatus;
   'bt:connection': { device: BtDevice | null; event: 'connected' | 'disconnected' };
+  'sleep:tick': { remainingMs: number; mode: SleepMode };
+  'sleep:ended': { reason: 'completed' | 'cancelled' };
+  'sync:state': { state: SyncState };
+  'cover:status': { path: string; phase: CoverPhase; coverPath?: string };
+  'display:state': { on: boolean };
 }
 
 export type IpcCommandChannel = keyof IpcCommands;
@@ -205,6 +250,12 @@ export const ALLOWED_COMMANDS: IpcCommandChannel[] = [
   'bt:connect',
   'bt:disconnect',
   'bt:removeDevice',
+  'sleep:start',
+  'sleep:cancel',
+  'sleep:get',
+  'sync:getState',
+  'sync:getLog',
+  'display:touch',
 ];
 export const ALLOWED_EVENTS: IpcEventChannel[] = [
   'app:ready',
@@ -213,6 +264,11 @@ export const ALLOWED_EVENTS: IpcEventChannel[] = [
   'library:updated',
   'sync:status',
   'bt:connection',
+  'sleep:tick',
+  'sleep:ended',
+  'sync:state',
+  'cover:status',
+  'display:state',
 ];
 
 /**

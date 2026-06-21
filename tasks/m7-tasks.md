@@ -5,11 +5,11 @@
 M7 liefert **Spec-Phase 5**: den Abschluss- und Härtungs-Meilenstein. Es schließt die
 verbleibenden Features ab und härtet das System für den Dauerbetrieb.
 
-1. **Display-Management (event-getrieben):** Wiedergabe aktiv → Display bleibt an
-   (DPMS deaktiviert). Pause/Stop → nach genau 5 min Display aus, Wiedergabe-State bleibt
-   erhalten (E13). Touch auf ausgeschaltetem Display → Display blendet in 300 ms auf, **kein**
-   Play/Pause ausgelöst (E6); erst der zweite Touch wirkt als UI-Tap. Event-Quelle:
-   `mpc idle player` — kein Polling.
+1. **Display-Management (im Electron-Main-Prozess):** Wiedergabe aktiv → Display bleibt an.
+   Keine Wiedergabe + keine Touch-Interaktion für 5 min → Display aus, Wiedergabe-State bleibt
+   erhalten (E13). Jeder Touch resettet den Inaktivitäts-Timer. Touch auf ausgeschaltetem
+   Display → Display blendet in 300 ms auf, **kein** Play/Pause ausgelöst (E6); erst der zweite
+   Touch wirkt als UI-Tap. Steuert Backlight via `bl_power` sysfs aus dem Main-Prozess.
 2. **Schlaf-Timer (S8):** Dialog mit 15/30/60 min + „Bis Ende des Kapitels"; sichtbarer
    Countdown; Tap auf Countdown bricht ab. 60 s vor Timer-Ende lineares Fade-Out der
    Lautstärke; nach Ablauf Pause (kein Stop → Resume bleibt möglich) (E10). „Bis Ende des
@@ -40,9 +40,11 @@ verbleibenden Features ab und härtet das System für den Dauerbetrieb.
   autoritativ. Der Renderer spiegelt nur.
 - **`setVolume(volume)`** in `mpd/control.ts` ist der **einzige** Lautstärke-Pfad (mit
   `max_volume`-Klemmung). Das Fade-Out **muss** darüber laufen — kein direkter `mpc`-Aufruf.
-- **DPMS/Display-Power ist ein Pi-Thema:** Der `display-manager.service` läuft als
-  Systemd-Service auf dem Gerät und steuert `xset dpms` / `vcgencmd display_power`. Der Code
-  liefert nur den Touch-Wake-Teil im Renderer (erster Touch verworfen, 300-ms-Fade-In).
+- **Display-Power läuft im Electron-Main-Prozess:** Main steuert das Backlight über
+  `child_process.execFile('sudo', ['tee', '/sys/class/backlight/10-0045/bl_power'])` (Spike
+  T7.P1 bestätigt: `bl_power` 1=aus, 0=an). Main kennt sowohl Player-State (via idle loop)
+  als auch Touch-Aktivität (via IPC-Event `display:touch` vom Renderer). Kein externer
+  Systemd-Service nötig. Renderer meldet Touches und verwirft den ersten Touch nach Wake.
 - **Cover-Pipeline ist rein Backend (Electron-Main):** lokales Cover → Online-Fetch → Cache.
   Der Renderer zeigt nur an, was Main liefert (`coverPath`-Feld in `MediaItem`, plus
   `cover:status`-Events für Shimmer).
@@ -93,16 +95,15 @@ verbleibenden Features ab und härtet das System für den Dauerbetrieb.
 
 ```
 PI-TASKS (auf dem Gerät)
-  T7.P1 Touch-Wake-Spike → bestätigter Event-Pfad + Swallow-Strategie
-     │
-     ├── T7.P2 display-manager.service (DPMS + 5-min-Timer + Touch-Wake)   ← braucht idle-Quelle
-     ├── T7.P3 Cover-Cache-Verzeichnis /mnt/hoermond/.cache/covers/ anlegen
+  T7.P1 Touch-Wake-Spike                       ✅ erledigt (2026-06-21)
+  T7.P2 sudo-Rechte für bl_power (passwordless) ✅ erledigt (2026-06-21)
+  T7.P3 Cover-Cache-Verzeichnis /mnt/hoermond/.cache/covers/ anlegen
      │
   T7.P4 E2E-Stromverlust-Testlauf (10×)        ← NACH allen Code-Tasks + Deploy
   T7.P5 Abnahme-/Polish-Durchlauf am Gerät     ← NACH T7.P4
 
 CODE-TASKS (im Repo)
-  T7.C1 Shared-Typen + IPC-Vertrag erweitern (sleep:*, cover:*, sync:*)
+  T7.C1 Shared-Typen + IPC-Vertrag erweitern (sleep:*, cover:*, sync:*, display:*)
      │
      ├── SCHLAF-TIMER
      │   ├── T7.C2 Schlaf-Timer-Dienst im Main (Countdown + Fade-Out + Pause)   ← T7.C1
@@ -121,8 +122,9 @@ CODE-TASKS (im Repo)
      │   ├── T7.C11 Sync-Status-Icon in Titelleiste (S1/Grid) + Tap-Details    ← T7.C1, T7.C6, T7.C7
      │   └── T7.C12 S10: Sync-Log-Ansicht (ersetzt Platzhalter)                ← T7.C1, T7.C6, T7.C7
      │
-     ├── DISPLAY-WAKE
-     │   └── T7.C13 Touch-Wake-Behandlung im Renderer (1. Touch verwerfen, Fade-In) ← T7.P1
+     ├── DISPLAY-MANAGEMENT
+     │   ├── T7.C13 Display-Manager im Main (bl_power + Inaktivitäts-Timer)    ← T7.C1, T7.P2
+     │   └── T7.C15 Touch-Wake im Renderer (Touch melden, 1. Tap schlucken, Fade-In) ← T7.C1, T7.C13
      │
      └── T7.C14 Polish-Pass: Timings §4.2 final abstimmen                       ← alle UI-Tasks
 ```
@@ -133,12 +135,12 @@ CODE-TASKS (im Repo)
 
 | ID | Titel | Größe | Status |
 |----|-------|-------|--------|
-| T7.P1 | Touch-Wake-Spike (Event-Pfad X11/libinput → Electron) | M | offen |
-| T7.P2 | display-manager.service (DPMS + 5-min-Timer + Wake) | M | offen |
-| T7.P3 | Cover-Cache-Verzeichnis anlegen | S | offen |
+| T7.P1 | Touch-Wake-Spike (Event-Pfad X11/libinput → Electron) | M | ✅ erledigt (2026-06-21) |
+| T7.P2 | sudo-Rechte für bl_power (passwordless) | S | ✅ erledigt (2026-06-21) |
+| T7.P3 | Cover-Cache-Verzeichnis anlegen | S | ✅ erledigt (2026-06-21) |
 | T7.P4 | E2E-Stromverlust-Testlauf (10×) | L | offen (nach Code + Deploy) |
 | T7.P5 | Abnahme-/Polish-Durchlauf am Gerät | M | offen (nach P4) |
-| T7.C1 | Shared-Typen + IPC-Vertrag erweitern | S | offen |
+| T7.C1 | Shared-Typen + IPC-Vertrag erweitern | S | ✅ erledigt (2026-06-21) |
 | T7.C2 | Schlaf-Timer-Dienst im Main | L | offen |
 | T7.C3 | IPC-Handler `sleep:*` registrieren | S | offen |
 | T7.C4 | Cover-Pipeline im Main (lokal → Fetch → Cache) | L | offen |
@@ -150,131 +152,55 @@ CODE-TASKS (im Repo)
 | T7.C10 | Cover.tsx: Shimmer-Zustand | M | offen |
 | T7.C11 | Sync-Status-Icon in Titelleiste + Tap-Details | M | offen |
 | T7.C12 | S10: Sync-Log-Ansicht | M | offen |
-| T7.C13 | Touch-Wake-Behandlung im Renderer | M | offen |
+| T7.C13 | Display-Manager im Main (bl_power + Inaktivitäts-Timer) | L | offen |
 | T7.C14 | Polish-Pass: Timings §4.2 | M | offen |
+| T7.C15 | Touch-Wake im Renderer (Touch melden, 1. Tap schlucken, Fade-In) | M | offen |
 
 ---
 
 ## Pi-Tasks
 
-### T7.P1 — Touch-Wake-Spike
-**Größe:** M · **Abhängigkeiten:** keine · **Status:** offen
+### T7.P1 — Touch-Wake-Spike ✅ ERLEDIGT (2026-06-21)
+Ergebnisse dokumentiert in `tasks/m7-spike-notes.md`.
 
-Verbindlicher Spike (laut `milestones.md`, technisches Risiko E6). Klären, wie der **erste
-Touch nach DPMS-Off** das Display weckt, **ohne** als Tap im Renderer anzukommen. Ergebnis
-in `tasks/m7-spike-notes.md` dokumentieren (Format wie `tasks/m6-spike-notes.md`).
+**Kernbefunde:**
+- `vcgencmd display_power 0/1` gibt `-1` zurück → funktioniert **nicht**
+- **`/sys/class/backlight/10-0045/bl_power`** funktioniert: `1`=aus, `0`=an (braucht sudo)
+- Digitizer bleibt bei dunklem Display **aktiv** (evtest bestätigt Events)
+- Touch-Events erreichen Electron und lösen Aktionen aus (Play/Pause im Dunkeln togglebar)
+- **Strategie (a) bestätigt:** Renderer verwirft ersten Touch nach Wake
+- `mpc idle player` funktioniert zuverlässig als Event-Quelle
 
-**Untersuchungspunkte:**
-1. **Wie schaltet das Display aus/an?** Auf dem offiziellen 7"-DSI-Display funktioniert
-   `xset dpms force off` / `force on` nicht zuverlässig — prüfe `vcgencmd display_power 0/1`
-   sowie das Backlight-sysfs (`/sys/class/backlight/*/bl_power`). Dokumentiere den
-   funktionierenden Mechanismus.
-2. **Wo kommt der weckende Touch an?** Bei DPMS-Off vs. Backlight-Off: Geht der erste Touch
-   trotzdem an X11/Electron? Mit `xinput test-xi2` / `evtest` beobachten, ob der Wake-Touch
-   ein `pointer/touch`-Event erzeugt, das Electron erreicht.
-3. **Swallow-Strategie wählen** (eine davon bestätigen):
-   - **(a) Renderer-seitig (bevorzugt):** Main kennt den Screen-Aus-Zustand (via
-     `display-manager.service` → IPC-Event `display:state`); Renderer verwirft den ersten
-     Touch nach `off`→`on` (300-ms-Fenster). **Code-Teil = T7.C13.**
-   - **(b) Main-seitig:** kurzer Input-Block / `xinput disable` für ~300 ms nach Wake.
-   Wenn (a) zuverlässig ist (Touch erreicht den Renderer, lässt sich dort verwerfen), ist (a)
-   die einfachste Lösung und macht T7.C13 vollständig.
-4. **Bestätige, dass `mpc idle player` als Event-Quelle taugt:** play/pause/stop löst zuverlässig
-   einen Wechsel aus, den der Service ohne Polling auswerten kann (`mpc idle player` blockiert
-   bis zum nächsten player-Event).
-
-**Akzeptanzkriterien:**
-- [ ] Funktionierender Display-Off/On-Mechanismus dokumentiert (exakter Befehl)
-- [ ] Verhalten des Wake-Touch dokumentiert (erreicht er den Renderer? ja/nein)
-- [ ] Swallow-Strategie (a) oder (b) festgelegt; Konsequenz für T7.C13 notiert
-- [ ] `mpc idle player` als zuverlässige Event-Quelle bestätigt
-- [ ] Ergebnisse in `tasks/m7-spike-notes.md`
+**Architektur-Entscheidung:** Display-Management wandert komplett in den **Electron-Main-
+Prozess** (statt Systemd-Service), weil Main sowohl Player-State als auch Touch-Aktivität
+kennen muss. Inaktivitäts-Timer = 5 min ab letztem Touch (nicht ab Pause), damit das Display
+beim Browsen ohne Wiedergabe nicht ausgeht. → T7.C13 + T7.C15.
 
 ---
 
-### T7.P2 — display-manager.service
-**Größe:** M · **Abhängigkeiten:** T7.P1 · **Status:** offen
+### T7.P2 — sudo-Rechte für bl_power (passwordless) ✅ ERLEDIGT (2026-06-21)
 
-Ein Systemd-User-Service auf dem Gerät, der das Display **event-getrieben** steuert. Läuft
-als `player`-User. Pfad der App auf dem Pi: `/home/player/hoermond/repo/app`.
+**Lösung:** Systemd-oneshot-Service `hoermond-backlight.service` setzt beim Boot
+`chmod 0666` auf `/sys/class/backlight/10-0045/bl_power`. Damit kann `player` ohne sudo
+direkt schreiben.
 
-**Logik (kein Polling):**
-1. Blockierend auf `mpc idle player` warten (jeder play/pause/stop weckt es).
-2. Aktuellen Zustand mit `mpc status` abfragen:
-   - **`playing`** → DPMS/Backlight **AN**, laufenden 5-min-Off-Timer abbrechen.
-   - **`paused` / `stopped`** → 5-min-Timer starten; läuft er ab, Display **AUS**.
-3. Bei Wechsel auf `playing`, während Display aus ist → sofort **AN**.
+**Was eingerichtet wurde:**
+1. `/etc/systemd/system/hoermond-backlight.service`:
+   ```ini
+   [Unit]
+   Description=Make backlight bl_power writable for player
+   After=sysinit.target
+   [Service]
+   Type=oneshot
+   ExecStart=/bin/chmod 0666 /sys/class/backlight/10-0045/bl_power
+   [Install]
+   WantedBy=multi-user.target
+   ```
+2. Service enabled + Reboot-fest verifiziert.
+3. `player` kann ohne sudo: `echo 1 > bl_power` (aus) / `echo 0 > bl_power` (an).
 
-**Implementierung** (Beispiel `display-manager.sh`, Pfad anpassen):
-```bash
-#!/usr/bin/env bash
-# Event-getriebenes Display-Management. Kein Polling.
-set -euo pipefail
-OFF_DELAY=300          # 5 min
-off_pid=""
-
-display_on()  { vcgencmd display_power 1 >/dev/null; }   # exakter Befehl aus T7.P1
-display_off() { vcgencmd display_power 0 >/dev/null; }
-
-schedule_off() {
-  [ -n "$off_pid" ] && kill "$off_pid" 2>/dev/null || true
-  ( sleep "$OFF_DELAY"; display_off ) &
-  off_pid=$!
-}
-cancel_off() { [ -n "$off_pid" ] && kill "$off_pid" 2>/dev/null || true; off_pid=""; }
-
-display_on
-case "$(mpc status | sed -n '2p')" in
-  *playing*) cancel_off ;;
-  *)         schedule_off ;;
-esac
-
-while mpc idle player >/dev/null; do
-  if mpc status | sed -n '2p' | grep -q playing; then
-    cancel_off; display_on
-  else
-    schedule_off
-  fi
-done
-```
-
-**Systemd-Unit** `~/.config/systemd/user/display-manager.service` (oder system-weit unter
-`/etc/systemd/system/` mit `User=player`):
-```ini
-[Unit]
-Description=Hoermond display power management (event-driven via mpc idle)
-After=mpd.service graphical.target
-
-[Service]
-Type=simple
-Environment=DISPLAY=:0
-ExecStart=/home/player/hoermond/repo/app/scripts/display-manager.sh
-Restart=always
-RestartSec=2
-
-[Install]
-WantedBy=default.target
-```
-
-4. **Touch-Wake-Anteil des Service** (abhängig von T7.P1-Entscheidung):
-   - Bei Strategie (a): Service sendet seinen Display-Zustand an die App. Einfachster Weg:
-     beim Aus-/Einschalten in eine Statusdatei schreiben (z. B.
-     `/run/user/1000/hoermond-display` mit `on`/`off`), die ein Code-Watcher liest und als
-     `display:state`-Event weiterreicht — **oder**, falls T7.P1 zeigt, dass der Renderer den
-     Wake-Touch ohnehin separat erkennen kann, entfällt dieser Pfad. T7.P1 entscheidet.
-   - Bei Strategie (b): hier zusätzlich `xinput disable`/`enable` mit ~300 ms Verzögerung
-     nach Wake einbauen.
-5. Service enabled + getestet: Wiedergabe → Display bleibt an; Pause → nach 5 min aus;
-   Wiedergabe-Start → sofort an.
-
-**Akzeptanzkriterien:**
-- [ ] Service läuft event-getrieben (`mpc idle player`), **kein** `sleep`-Polling-Loop für die
-      Statusabfrage (nur der Off-Timer nutzt `sleep`)
-- [ ] Wiedergabe aktiv → Display dauerhaft an
-- [ ] Pause/Stop → nach **genau 5 min** aus; Wiedergabe-State unverändert (E13)
-- [ ] Wiedergabe-Start während Display-Aus → sofort an
-- [ ] Service enabled (Autostart) + Reboot-fest
-- [ ] Skript + Unit liegen im Repo unter `app/scripts/` (versioniert)
+**Konsequenz für T7.C13:** Im Display-Manager `fs.writeFile` statt `execFile('sudo', ['tee', ...])`
+nutzen — einfacher, kein Subprozess.
 
 ---
 
@@ -299,7 +225,7 @@ Das Cache-Verzeichnis für Online-Cover auf der **beschreibbaren** Partition anl
 ---
 
 ### T7.P4 — E2E-Stromverlust-Testlauf (10×)
-**Größe:** L · **Abhängigkeiten:** alle Code-Tasks deployt, T7.P2/P3 aktiv · **Status:** offen
+**Größe:** L · **Abhängigkeiten:** alle Code-Tasks deployt, T7.P2 + T7.P3 erledigt · **Status:** offen
 
 Der verbindliche Härtungstest des Meilensteins (E9). **Nach** Deploy aller M7-Code-Tasks.
 
@@ -361,8 +287,8 @@ Finaler Abnahme-Durchlauf am echten 7"-Display gegen die §4.2-Timings und alle 
 ### T7.C1 — Shared-Typen + IPC-Vertrag erweitern
 **Größe:** S · **Abhängigkeiten:** keine
 
-Geteilte Typen definieren und den IPC-Vertrag um `sleep:*`-, `cover:*`- und
-`sync:*`-Channels erweitern.
+Geteilte Typen definieren und den IPC-Vertrag um `sleep:*`-, `cover:*`-, `sync:*`- und
+`display:*`-Channels erweitern.
 
 **Schritte:**
 1. In `app/src/shared/ipc-contract.ts` neue Typen ergänzen (additiv):
@@ -390,20 +316,26 @@ Geteilte Typen definieren und den IPC-Vertrag um `sleep:*`-, `cover:*`- und
    'sleep:get':    { request: void;                  response: { active: boolean; endsAt: number | null; mode: SleepMode | null } };
    'sync:getState':{ request: void;                  response: { state: SyncState } };
    'sync:getLog':  { request: void;                  response: { entries: SyncLogEntry[] } };
+   'display:touch': { request: void;                 response: void };
    ```
    - `endsAt` ist ein absoluter Timestamp (`Date.now() + dauer`) bzw. `null` bei „chapterEnd"
      (Ende richtet sich nach Restzeit des Mediums, kein fester Wandzeit-Punkt).
+   - `display:touch` wird vom Renderer bei **jedem** Touch aufgerufen (Fire-and-forget), damit
+     Main den Inaktivitäts-Timer resetten kann. Leichtgewichtig: keine Response nötig.
 3. `IpcEvents` ergänzen:
    ```ts
    'sleep:tick':    { remainingMs: number; mode: SleepMode };  // ~1×/s während aktiv
    'sleep:ended':   { reason: 'completed' | 'cancelled' };
    'sync:state':    { state: SyncState };                       // aggregiert (Icon)
    'cover:status':  { path: string; phase: CoverPhase; coverPath?: string };
+   'display:state': { on: boolean };                             // Main → Renderer bei Display aus/an
    ```
    - `cover:status.path` ist der `MediaItem.path` (Unit-Pfad); `coverPath` ist bei `ready`
      der lokale Cache-Pfad.
    - `sync:status` (Roh-Event) bleibt unverändert bestehen.
-4. Die fünf neuen Commands in `ALLOWED_COMMANDS`, die vier neuen Events in `ALLOWED_EVENTS`.
+   - `display:state` informiert den Renderer, ob das Display an/aus ist — der Renderer nutzt
+     das, um nach `off→on` den ersten Touch zu schlucken und 300-ms-Fade-In auszulösen (T7.C15).
+4. Die **sechs** neuen Commands in `ALLOWED_COMMANDS`, die **fünf** neuen Events in `ALLOWED_EVENTS`.
 5. **`REPLAYABLE_EVENTS` NICHT erweitern** — alle neuen Events sind wiederkehrend, keine
    One-Shot-Lifecycle-Events. Initialzustand holt der Renderer per `sleep:get` /
    `sync:getState` beim Mount (Pull-Muster, siehe ARCHITECT-Note im Vertrag).
@@ -411,7 +343,7 @@ Geteilte Typen definieren und den IPC-Vertrag um `sleep:*`-, `cover:*`- und
 **Dateien:** geändert: `app/src/shared/ipc-contract.ts`.
 
 **Akzeptanzkriterien:**
-- [ ] Fünf Commands + vier Events getypt und whitelistet
+- [ ] Sechs Commands + fünf Events getypt und whitelistet
 - [ ] `REPLAYABLE_EVENTS` unverändert
 - [ ] `npm run typecheck` fehlerfrei
 
@@ -941,43 +873,163 @@ Sync-Vorgänge ersetzen.
 
 ---
 
-### T7.C13 — Touch-Wake-Behandlung im Renderer
-**Größe:** M · **Abhängigkeiten:** T7.P1 (Strategie-Entscheidung)
+### T7.C13 — Display-Manager im Main (bl_power + Inaktivitäts-Timer)
+**Größe:** L · **Abhängigkeiten:** T7.C1, T7.P2
 
-Den UI-Anteil von E6 umsetzen: nach Display-Wake den **ersten** Touch verwerfen und 300 ms
-weich aufblenden — abhängig von der in T7.P1 gewählten Strategie.
+Ein Main-seitiger Dienst, der das Display steuert. Kennt sowohl den Player-State (via
+`startIdleLoop`) als auch Touch-Aktivität (via `display:touch` vom Renderer). Steuert das
+Backlight über `/sys/class/backlight/10-0045/bl_power` (T7.P1-Ergebnis).
 
-**Voraussetzung:** T7.P1 muss ergeben haben, dass der weckende Touch den Renderer erreicht
-(Strategie (a)). Falls T7.P1 Strategie (b) wählt (Swallow im Main), entfällt der
-„ersten Touch verwerfen"-Teil und dieser Task reduziert sich auf den 300-ms-Fade-In.
+**Logik:**
+- **Playing** → Display **immer an**, Inaktivitäts-Timer deaktiviert.
+- **Nicht playing** → 5-min-Inaktivitäts-Timer läuft. Jeder Touch (via `display:touch`-IPC)
+  resettet den Timer. Läuft der Timer ab → Display aus.
+- **Touch bei dunklem Display** → Display sofort an, Timer neu starten,
+  `display:state { on: true }` an Renderer senden (Renderer schluckt ersten Tap, T7.C15).
+- **Wiedergabe-Start bei dunklem Display** → Display sofort an.
 
-**Schritte (Strategie (a)):**
-1. **Display-Zustand kennen:** Main muss dem Renderer mitteilen, wann das Display aus/an ist.
-   - Wenn T7.P2 eine Statusquelle bereitstellt (z. B. Statusdatei `/run/user/1000/hoermond-display`):
-     einen kleinen Watcher im Main (analog `startSyncLogBridge`) anlegen, der bei Änderung ein
-     `display:state { on: boolean }`-Event sendet. **Dann T7.C1 um `display:state`-Event +
-     Whitelist erweitern** (additiv).
-   - Falls T7.P1/P2 zeigen, dass der Renderer den Wake auch ohne Main-Signal erkennen kann
-     (z. B. langes Input-Gap + erster Touch), den einfacheren Pfad wählen und ohne neues
-     Event auskommen. T7.P1 entscheidet.
-2. **Ersten Touch verwerfen:** Eine globale Capture-Phase-Schicht (z. B. in `App.tsx` oder
-   einem `WakeGuard`-Wrapper) hört auf `pointerdown`/`touchstart` in der **Capture-Phase**.
-   Solange das Display gerade aus war (Flag `wokeRecently`, gesetzt bei `display:state.on ===
-   false`→`true` bzw. erkanntem Wake), wird der **erste** Touch innerhalb von 300 ms via
-   `e.stopPropagation()` + `e.preventDefault()` geschluckt und das Flag zurückgesetzt. Der
-   zweite Touch geht normal durch.
-3. **300-ms-Fade-In** (§4.2): beim Wake einen kurzen Helligkeits-/Opacity-Fade über die
-   gesamte UI (z. B. Overlay `opacity 0→1` in 300 ms) — sanftes Aufwachen statt hartem An.
-   `prefers-reduced-motion` respektieren.
-4. **Kein Effekt im Normalbetrieb:** Wenn das Display nicht aus war, dürfen Taps **nie**
-   verschluckt werden (sonst „toter erster Tap"). Das `wokeRecently`-Fenster muss strikt
-   an einen tatsächlichen Wake gebunden sein.
+**Schritte:**
+1. Neue Datei `app/src/main/display/manager.ts`:
+   ```ts
+   import type { BrowserWindow } from 'electron';
 
-**Dateien:** geändert: `app/src/renderer/src/App.tsx` (oder neu: `components/WakeGuard.tsx`),
-`screens.css`; ggf. `app/src/shared/ipc-contract.ts` (`display:state`-Event),
-`app/src/main/index.ts` + neuer Watcher (falls Statusquelle aus T7.P2).
+   export function initDisplayManager(getWindow: () => BrowserWindow | null): void;
+   export function onPlayerStateChange(status: 'play' | 'pause' | 'stop'): void;
+   export function onTouch(): void;
+   export function stopDisplayManager(): void;
+   ```
+2. **Display-Steuerung** über `fs.writeFile` (T7.P2 hat `bl_power` direkt beschreibbar
+   gemacht — kein sudo nötig):
+   ```ts
+   import { writeFile } from 'fs/promises';
+
+   const BL_PATH = process.env.HOERMOND_BACKLIGHT_PATH
+     ?? '/sys/class/backlight/10-0045/bl_power';
+
+   async function displayOn() {
+     try { await writeFile(BL_PATH, '0'); } catch (e) { console.warn('display on failed', e); }
+     displayIsOn = true;
+     getWindow()?.webContents.send('display:state', { on: true });
+   }
+
+   async function displayOff() {
+     try { await writeFile(BL_PATH, '1'); } catch (e) { console.warn('display off failed', e); }
+     displayIsOn = false;
+     getWindow()?.webContents.send('display:state', { on: false });
+   }
+   ```
+   Pfad als ENV `HOERMOND_BACKLIGHT_PATH` überschreibbar (für Entwicklung auf Nicht-Pi-Rechnern).
+3. **Inaktivitäts-Timer:** 5-min-Timeout (`setTimeout`), bei jedem Aufruf von `onTouch()`
+   oder `onPlayerStateChange('play')` zurücksetzen (`clearTimeout` + neues `setTimeout`).
+   Bei Ablauf: `displayOff()`.
+   ```ts
+   const INACTIVITY_MS = 5 * 60 * 1000;  // ENV überschreibbar für Tests
+   let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
+
+   function resetInactivityTimer() {
+     if (inactivityTimer) clearTimeout(inactivityTimer);
+     inactivityTimer = setTimeout(() => displayOff(), INACTIVITY_MS);
+   }
+   ```
+4. **`onPlayerStateChange`:**
+   - `'play'` → `displayOn()`, Inaktivitäts-Timer **deaktivieren** (Display bleibt dauerhaft
+     an während Wiedergabe).
+   - `'pause'` / `'stop'` → Inaktivitäts-Timer **starten** (5 min ab jetzt; Touches resetten
+     ihn weiter).
+5. **`onTouch`:**
+   - Wenn Display **aus** → `displayOn()`, Timer neu starten. Das `display:state { on: true }`
+     löst im Renderer den Tap-Swallow + Fade-In aus (T7.C15).
+   - Wenn Display **an** → nur Timer resetten (kein Event nötig).
+6. **Integration in `startIdleLoop`:** Die idle loop ruft bereits bei jedem Player-Event
+   `getState()` ab und sendet `player:state`. An derselben Stelle
+   `onPlayerStateChange(state.status)` aufrufen. Sauberste Lösung: der Display-Manager
+   exportiert einen Callback, den die idle loop bei jedem Event ruft — **kein** Umbau der
+   idle loop nötig, nur ein Aufruf ergänzen.
+7. **`display:touch`-Handler** in `register.ts`:
+   ```ts
+   ipcMain.handle('display:touch', () => { onTouch(); });
+   ```
+8. In `app/src/main/index.ts`: `initDisplayManager(...)` starten (nach idle loop), Cleanup
+   in `before-quit`.
+
+**Dateien:** neu: `app/src/main/display/manager.ts`; geändert: `app/src/main/index.ts`,
+`app/src/main/ipc/register.ts`, `app/src/main/mpd/idle.ts` (einen Aufruf ergänzen).
 
 **Akzeptanzkriterien:**
+- [ ] Wiedergabe aktiv → Display dauerhaft an (kein Timer)
+- [ ] Nicht playing + keine Touch-Interaktion für 5 min → Display aus (E13)
+- [ ] Jeder Touch resettet den 5-min-Timer
+- [ ] Touch bei dunklem Display → Display sofort an, `display:state { on: true }` gesendet
+- [ ] Wiedergabe-Start bei dunklem Display → Display sofort an
+- [ ] `display:touch`-Handler in register.ts
+- [ ] Dienst in `index.ts` gestartet + bei `before-quit` gestoppt
+- [ ] `npm run typecheck` fehlerfrei
+
+---
+
+### T7.C15 — Touch-Wake im Renderer (Touch melden, 1. Tap schlucken, Fade-In)
+**Größe:** M · **Abhängigkeiten:** T7.C1, T7.C13
+
+Der Renderer-Anteil des Display-Managements: (1) jeden Touch an Main melden, (2) nach
+Display-Wake den ersten Tap schlucken, (3) 300-ms-Fade-In.
+
+**Schritte:**
+1. **Jeden Touch an Main melden:** Ein globaler Event-Listener in `App.tsx` (oder ein
+   `<DisplayTouchReporter>`-Wrapper) auf `pointerdown` in der **Capture-Phase**:
+   ```tsx
+   useEffect(() => {
+     const handler = () => { window.hoermond.invoke('display:touch', undefined); };
+     document.addEventListener('pointerdown', handler, true);  // capture
+     return () => document.removeEventListener('pointerdown', handler, true);
+   }, []);
+   ```
+   Das ist Fire-and-forget — der Renderer wartet nicht auf die Response. Der Main nutzt es
+   zum Resetten des Inaktivitäts-Timers.
+
+2. **`display:state`-Event abonnieren** und Display-Zustand tracken:
+   ```tsx
+   const [displayOff, setDisplayOff] = useState(false);
+   useEffect(() => {
+     const off = window.hoermond.on('display:state', (e) => setDisplayOff(!e.on));
+     return () => off();
+   }, []);
+   ```
+
+3. **Ersten Touch nach Wake schlucken:** Wenn `display:state { on: true }` nach einem
+   vorherigen `on: false` kommt (= Wake), ein `wokeRecently`-Flag setzen. Ein zweiter
+   Capture-Phase-Listener auf `pointerdown`/`touchstart` prüft das Flag:
+   ```tsx
+   const wokeRef = useRef(false);
+   // Bei display:state on=true nach off:
+   wokeRef.current = true;
+   // Im Capture-Handler:
+   if (wokeRef.current) {
+     e.stopPropagation();
+     e.preventDefault();
+     wokeRef.current = false;
+     return;
+   }
+   ```
+   **Wichtig:** Der `display:touch`-Aufruf (Schritt 1) muss **trotzdem** feuern (er resettet
+   den Timer), nur die UI-Weiterleitung wird geschluckt.
+
+4. **300-ms-Fade-In:** Beim Wake ein Overlay mit `opacity 0→1` in 300 ms über die gesamte
+   UI legen (CSS-Transition), danach entfernen. `prefers-reduced-motion` respektieren
+   (dann kein Fade, sofort sichtbar).
+   ```css
+   .wake-fade { position: fixed; inset: 0; background: black; pointer-events: none;
+                 opacity: 1; transition: opacity 300ms ease-out; z-index: 9999; }
+   .wake-fade--visible { opacity: 0; }
+   ```
+
+5. **Kein Effekt im Normalbetrieb:** `wokeRecently` wird **nur** bei einem echten
+   `off→on`-Übergang gesetzt. Wenn das Display nie aus war, werden Taps nie verschluckt.
+
+**Dateien:** geändert: `app/src/renderer/src/App.tsx` (oder neu:
+`components/WakeGuard.tsx`), `screens.css`.
+
+**Akzeptanzkriterien:**
+- [ ] Jeder Touch sendet `display:touch` an Main (Inaktivitäts-Timer-Reset)
 - [ ] Erster Touch nach Display-Wake löst **kein** Play/Pause / keinen UI-Tap aus (E6)
 - [ ] Zweiter Touch wirkt normal
 - [ ] 300-ms-Fade-In beim Wake; `prefers-reduced-motion` respektiert

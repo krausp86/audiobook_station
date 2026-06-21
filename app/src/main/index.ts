@@ -8,6 +8,7 @@ import { startPositionPersistence } from './player/persist';
 import { resumeLast } from './player/resume';
 import { startSyncLogBridge } from './sync/watch-log';
 import { startBtListener } from './bt/listen';
+import { initSleepTimer, stopSleepService } from './sleep/timer';
 
 /**
  * Create the main application window.
@@ -68,6 +69,7 @@ app.whenReady().then(() => {
   const stopPersist = startPositionPersistence();
   const stopSyncBridge = startSyncLogBridge(() => BrowserWindow.getAllWindows()[0] ?? null);
   const stopBtListener = startBtListener(() => BrowserWindow.getAllWindows()[0] ?? null);
+  initSleepTimer(() => BrowserWindow.getAllWindows()[0] ?? null);
 
   // Resume is triggered in did-finish-load (see createWindow) so no audio plays before the UI
 
@@ -77,6 +79,7 @@ app.whenReady().then(() => {
     stopPersist();
     stopSyncBridge();
     stopBtListener();
+    stopSleepService();
   });
 
   app.on('activate', () => {
