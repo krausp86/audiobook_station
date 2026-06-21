@@ -9,6 +9,7 @@ import { resumeLast } from './player/resume';
 import { startSyncLogBridge } from './sync/watch-log';
 import { startBtListener } from './bt/listen';
 import { initSleepTimer, stopSleepService } from './sleep/timer';
+import { initSyncState, handleSyncEvent, stopSyncService } from './sync/state';
 
 /**
  * Create the main application window.
@@ -67,7 +68,11 @@ app.whenReady().then(() => {
   // Start background services
   const stopIdle = startIdleLoop(() => BrowserWindow.getAllWindows()[0] ?? null);
   const stopPersist = startPositionPersistence();
-  const stopSyncBridge = startSyncLogBridge(() => BrowserWindow.getAllWindows()[0] ?? null);
+  initSyncState(() => BrowserWindow.getAllWindows()[0] ?? null);
+  const stopSyncBridge = startSyncLogBridge(
+    () => BrowserWindow.getAllWindows()[0] ?? null,
+    handleSyncEvent,
+  );
   const stopBtListener = startBtListener(() => BrowserWindow.getAllWindows()[0] ?? null);
   initSleepTimer(() => BrowserWindow.getAllWindows()[0] ?? null);
 
@@ -80,6 +85,7 @@ app.whenReady().then(() => {
     stopSyncBridge();
     stopBtListener();
     stopSleepService();
+    stopSyncService();
   });
 
   app.on('activate', () => {

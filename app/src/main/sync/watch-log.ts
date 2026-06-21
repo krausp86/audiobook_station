@@ -16,9 +16,13 @@ const LOG_PATH =
  * with the Pi's sync process.
  *
  * @param getWindow callback to get the current BrowserWindow
+ * @param onEvent optional internal callback to process each event (e.g., for aggregation)
  * @returns cleanup function to close the file watcher
  */
-export function startSyncLogBridge(getWindow: () => BrowserWindow | null): () => void {
+export function startSyncLogBridge(
+  getWindow: () => BrowserWindow | null,
+  onEvent?: (ev: SyncStatus) => void,
+): () => void {
   // Exit early if log file doesn't exist yet
   if (!existsSync(LOG_PATH)) {
     return () => {};
@@ -46,7 +50,10 @@ export function startSyncLogBridge(getWindow: () => BrowserWindow | null): () =>
         if (!line.trim()) continue;
         try {
           const ev = JSON.parse(line) as SyncStatus;
+          // Forward to renderer
           getWindow()?.webContents.send('sync:status', ev);
+          // Optionally notify internal listener (e.g., aggregator)
+          onEvent?.(ev);
         } catch {
           // Skip unparseable/incomplete lines
         }

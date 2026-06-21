@@ -11,6 +11,7 @@ import { hashPin, verifyPin, isValidPinFormat } from '../security/pin';
 import { getBtAdapter } from '../bt/adapter';
 import type { SleepMode } from '@shared/ipc-contract';
 import { startSleep, cancelSleep, getSleep } from '../sleep/timer';
+import { getSyncState, getSyncLog } from '../sync/state';
 
 /**
  * Check if a PIN matches the stored PIN (with fallback to default '0000').
@@ -240,4 +241,10 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
 
   // sleep:get — get current sleep timer state
   ipcMain.handle('sleep:get', () => getSleep());
+
+  // sync:getState — get current aggregated sync state (idle/running/error)
+  ipcMain.handle('sync:getState', () => ({ state: getSyncState() }));
+
+  // sync:getLog — get the last (up to 10) sync log entries
+  ipcMain.handle('sync:getLog', () => ({ entries: getSyncLog() }));
 }
