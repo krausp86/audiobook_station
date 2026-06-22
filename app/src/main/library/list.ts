@@ -22,31 +22,7 @@ import { join, resolve } from 'path';
  */
 async function resolveCoverSync(item: MediaItem): Promise<string | null> {
   try {
-    const mediaRoot = process.env.HOERMOND_MEDIA_ROOT ?? '/mnt/hoermond';
-    const absolutePath = resolve(mediaRoot, item.path);
-
-    // Check if path is a directory
-    let searchDir: string;
-    try {
-      const stat_ = await stat(absolutePath);
-      searchDir = stat_.isDirectory() ? absolutePath : absolutePath.substring(0, absolutePath.lastIndexOf('/'));
-    } catch {
-      return null;
-    }
-
-    // Look for file-based covers (cover.jpg, folder.jpg, etc.)
-    const fileNames = ['cover.jpg', 'folder.jpg', 'cover.png', 'folder.png'];
-    for (const fileName of fileNames) {
-      try {
-        const fullPath = join(searchDir, fileName);
-        await stat(fullPath);
-        return fullPath;
-      } catch {
-        // File not found, try next
-      }
-    }
-
-    // Check cache (SHA-1 of path + extension)
+    // Check cache first (cheapest — single stat, no media path dependency)
     const cacheDir = process.env.HOERMOND_COVER_CACHE ?? '/mnt/hoermond/.cache/covers/';
     const { createHash } = await import('crypto');
     const hash = createHash('sha1').update(item.path).digest('hex');
@@ -55,8 +31,32 @@ async function resolveCoverSync(item: MediaItem): Promise<string | null> {
       await stat(cachePath);
       return cachePath;
     } catch {
+      // not cached, continue
+    }
+
+    // Check file-based covers in the media directory
+    const mediaRoot = process.env.HOERMOND_MEDIA_ROOT ?? '/mnt/hoermond';
+    const absolutePath = resolve(mediaRoot, item.path);
+    let searchDir: string;
+    try {
+      const stat_ = await stat(absolutePath);
+      searchDir = stat_.isDirectory() ? absolutePath : absolutePath.substring(0, absolutePath.lastIndexOf('/'));
+    } catch {
       return null;
     }
+
+    const fileNames = ['cover.jpg', 'folder.jpg', 'cover.png', 'folder.png'];
+    for (const fileName of fileNames) {
+      try {
+        const fullPath = join(searchDir, fileName);
+        await stat(fullPath);
+        return fullPath;
+      } catch {
+        // not found, try next
+      }
+    }
+
+    return null;
   } catch (err) {
     console.warn(`[library-list] error in resolveCoverSync for ${item.path}:`, err);
     return null;
