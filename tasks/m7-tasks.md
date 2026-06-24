@@ -138,23 +138,23 @@ CODE-TASKS (im Repo)
 | T7.P1 | Touch-Wake-Spike (Event-Pfad X11/libinput → Electron) | M | ✅ erledigt (2026-06-21) |
 | T7.P2 | sudo-Rechte für bl_power (passwordless) | S | ✅ erledigt (2026-06-21) |
 | T7.P3 | Cover-Cache-Verzeichnis anlegen | S | ✅ erledigt (2026-06-21) |
-| T7.P4 | E2E-Stromverlust-Testlauf (10×) | L | offen (nach Code + Deploy) |
-| T7.P5 | Abnahme-/Polish-Durchlauf am Gerät | M | offen (nach P4) |
+| T7.P4 | E2E-Stromverlust-Testlauf (10×) | L | ✅ erledigt (2026-06-24) |
+| T7.P5 | Abnahme-/Polish-Durchlauf am Gerät | M | ✅ erledigt (2026-06-24) |
 | T7.C1 | Shared-Typen + IPC-Vertrag erweitern | S | ✅ erledigt (2026-06-21) |
-| T7.C2 | Schlaf-Timer-Dienst im Main | L | offen |
-| T7.C3 | IPC-Handler `sleep:*` registrieren | S | offen |
-| T7.C4 | Cover-Pipeline im Main (lokal → Fetch → Cache) | L | offen |
-| T7.C5 | `library:list` füllt `coverPath` + `cover:status` | M | offen |
-| T7.C6 | Sync-Status-Aggregation im Main | M | offen |
-| T7.C7 | de.json: Schlaf-/Cover-/Sync-Strings | S | offen |
-| T7.C8 | Mond-Icon in S5 tippbar → S8 | S | offen |
-| T7.C9 | S8 Schlaf-Timer-Dialog + Countdown in S5 | L | offen |
-| T7.C10 | Cover.tsx: Shimmer-Zustand | M | offen |
-| T7.C11 | Sync-Status-Icon in Titelleiste + Tap-Details | M | offen |
-| T7.C12 | S10: Sync-Log-Ansicht | M | offen |
-| T7.C13 | Display-Manager im Main (bl_power + Inaktivitäts-Timer) | L | offen |
-| T7.C14 | Polish-Pass: Timings §4.2 | M | offen |
-| T7.C15 | Touch-Wake im Renderer (Touch melden, 1. Tap schlucken, Fade-In) | M | offen |
+| T7.C2 | Schlaf-Timer-Dienst im Main | L | ✅ erledigt (2026-06-21) |
+| T7.C3 | IPC-Handler `sleep:*` registrieren | S | ✅ erledigt (2026-06-21) |
+| T7.C4 | Cover-Pipeline im Main (lokal → Fetch → Cache) | L | ✅ erledigt (2026-06-21) |
+| T7.C5 | `library:list` füllt `coverPath` + `cover:status` | M | ✅ erledigt (2026-06-21) |
+| T7.C6 | Sync-Status-Aggregation im Main | M | ✅ erledigt (2026-06-21) |
+| T7.C7 | de.json: Schlaf-/Cover-/Sync-Strings | S | ✅ erledigt (2026-06-21) |
+| T7.C8 | Mond-Icon in S5 tippbar → S8 | S | ✅ erledigt (2026-06-21) |
+| T7.C9 | S8 Schlaf-Timer-Dialog + Countdown in S5 | L | ✅ erledigt (2026-06-21) |
+| T7.C10 | Cover.tsx: Shimmer-Zustand | M | ✅ erledigt (2026-06-21) |
+| T7.C11 | Sync-Status-Icon in Titelleiste + Tap-Details | M | ✅ erledigt (2026-06-21) |
+| T7.C12 | S10: Sync-Log-Ansicht | M | ✅ erledigt (2026-06-21) |
+| T7.C13 | Display-Manager im Main (bl_power + Inaktivitäts-Timer) | L | ✅ erledigt (2026-06-21) |
+| T7.C14 | Polish-Pass: Timings §4.2 | M | ✅ erledigt (2026-06-21) |
+| T7.C15 | Touch-Wake im Renderer (Touch melden, 1. Tap schlucken, Fade-In) | M | ✅ erledigt (2026-06-21) |
 
 ---
 
