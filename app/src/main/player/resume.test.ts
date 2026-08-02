@@ -54,11 +54,21 @@ describe('resumeLast', () => {
     mockMpdSendCalls = [];
   });
 
-  it('should silently return if no position exists in database', async () => {
-    // No data in DB, resumeLast should be a no-op
-    await resumeLast();
+  // resumeLast() normalisiert repeat/single/consume immer — auch wenn es danach
+  // nichts fortsetzt. MPD stellt diese Flags aus seiner state-Datei wieder her,
+  // deshalb passiert das vor der Entscheidung (siehe resume.ts:17-21).
+  // „Kein Resume" heißt also: keine Wiedergabe-Kommandos, nicht gar keine.
+  const NORMALIZE_CMDS = ['repeat 0', 'single 0', 'consume 0'];
+
+  function expectNoPlayback(): void {
     expect(mockPlayCalls).toHaveLength(0);
-    expect(mockMpdSendCalls).toHaveLength(0);
+    expect(mockMpdSendCalls).toEqual(NORMALIZE_CMDS);
+  }
+
+  it('should silently return if no position exists in database', async () => {
+    // No data in DB, resumeLast should not start playback
+    await resumeLast();
+    expectNoPlayback();
   });
 
   it('should not resume if last status was "stopped"', async () => {
@@ -70,8 +80,7 @@ describe('resumeLast', () => {
       .run('audiobooks/Author/Book', 0, 123, new Date().toISOString(), 'stopped');
 
     await resumeLast();
-    expect(mockPlayCalls).toHaveLength(0);
-    expect(mockMpdSendCalls).toHaveLength(0);
+    expectNoPlayback();
   });
 
   it('should resume if last status was "paused"', async () => {

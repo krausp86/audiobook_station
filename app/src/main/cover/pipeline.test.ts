@@ -131,16 +131,30 @@ describe('Cover Pipeline', () => {
   });
 
   it('should handle errors gracefully (no throw)', async () => {
-    const item: CoverItem = {
-      path: 'audiobooks/Author/Book',
-      type: 'audiobook',
-      title: 'Book',
-      artist: 'Author',
-    };
+    // Dieser Test heißt „handle errors gracefully" — dann muss er den Fehler auch
+    // selbst erzeugen. Ohne Mock lief er bis zu MusicBrainz/Cover Art Archive raus
+    // (`artist` ist gesetzt, der Nachbartest oben lässt es genau deshalb weg), machte
+    // eine echte HTTP-Anfrage und riss bei langsamem Netz den 5-s-Timeout von vitest.
+    // Ergebnis war ein Test, der etwa jeden zwölften Lauf rot wurde.
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn(async () => {
+      throw new Error('simulated network failure');
+    }) as unknown as typeof fetch;
 
-    // Should not throw, just return null
-    const result = await resolveCover(item);
-    expect(result).toBeNull();
+    try {
+      const item: CoverItem = {
+        path: 'audiobooks/Author/Book',
+        type: 'audiobook',
+        title: 'Book',
+        artist: 'Author',
+      };
+
+      // Should not throw, just return null
+      const result = await resolveCover(item);
+      expect(result).toBeNull();
+    } finally {
+      globalThis.fetch = realFetch;
+    }
   });
 
   it('should respect HOERMOND_MEDIA_ROOT env var', async () => {

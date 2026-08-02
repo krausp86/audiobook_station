@@ -124,6 +124,36 @@ sie fasst `Der Schatz/CD1` und `CD2` **korrekt** zu einer Einheit zusammen. Ein 
 `dirname(file)` würde das kaputtmachen. Die Sonderregel für Datenträger-Ordner ist also
 keine Kür, sondern nötig, sobald die 3-Segment-Regel fällt.
 
+### Gegenprobe: was das Ordnermodell konkret ändert
+
+`node dev/show-units.mjs` wendet beide Regeln auf denselben Bestand an. Ergebnis
+**15 → 13 Kacheln**:
+
+```
+  − audiobooks/Lange Reihe/Der Schatz        + audiobooks/Lange Reihe/Der Schatz/CD1
+                                             + audiobooks/Lange Reihe/Der Schatz/CD2
+  − audiobooks/WasIstWas                     + audiobooks/WasIstWas/Sonnensystem.m4b
+  − music/Anna/Kinderhits                    + music/Sampler/Kinderhits
+  − music/Bernd/Kinderhits
+  − music/Clara/Kinderhits
+  − music/Diverse/Lieblingslieder            + music/Kinderlieder/Lieblingslieder
+  − music/Ohne Tags/track-a.mp3              + music/Ohne Tags
+  − music/Ohne Tags/track-b.mp3
+  − music/Übungskünstler/Sonderzeichen       + music/Umlaute & Zeichen
+```
+
+Vier Verbesserungen, eine Regression:
+
+- ✅ Der zerfallene Sampler wird **eine** Kachel.
+- ✅ Die beiden tag-losen Dateien werden **eine** Kachel statt zweier.
+- ✅ `Lieblingslieder` enthält endlich **beide** Songs — die Kopie wird nicht mehr über
+  Ordnergrenzen hinweg dem Sampler zugeschlagen.
+- ✅ Die Catch-all-Kachel `WasIstWas` verschwindet; die lose `.m4b` wird ein sauberer
+  Einzelsong.
+- ❌ **`Der Schatz` zerfällt in `CD1` und `CD2`.** Die einzige Verschlechterung — und der
+  Beleg, dass die Datenträger-Sonderregel Teil der Umsetzung sein muss, nicht ein
+  „nice to have" danach.
+
 ### Hörbuch-Regel im Detail
 
 Für Hörbücher gilt eine andere, ebenfalls unpassende Regel (`list.ts:118`):

@@ -84,8 +84,13 @@ m4b() {
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Navigationsordner mit zwei Einheiten darunter — der WasIstWas-Fall aus der Notiz.
+#
+# Dinosaurier ist bewusst LANG (3 x 150 s = 7:30): die uebrigen Fixtures sind
+# 4-6 s kurz, damit der Bestand klein bleibt — damit laesst sich aber weder
+# Seek noch -15s/+30s noch Resume ueber eine Spurgrenze hinweg sinnvoll pruefen,
+# weil der Track vorbei ist, bevor man den Regler trifft.
 for i in 1 2 3; do
-  mp3 "$MEDIA/audiobooks/WasIstWas/Dinosaurier/0$i.mp3" 6 \
+  mp3 "$MEDIA/audiobooks/WasIstWas/Dinosaurier/0$i.mp3" 150 \
       "Teil $i" "WasIstWas" "Dinosaurier" "$i"
 done
 for i in 1 2; do
@@ -96,7 +101,10 @@ done
 # GEMISCHTER ORDNER: Unterordner UND lose Datei nebeneinander.
 # Erwartung nach neuem Modell: WasIstWas = Navigationsordner,
 # Sonnensystem.m4b = Einzelsong-Kachel auf derselben Ebene.
-m4b "$MEDIA/audiobooks/WasIstWas/Sonnensystem.m4b" 24 "Sonnensystem" 6
+#
+# Ebenfalls lang (300 s / 5 Kapitel a 60 s), damit Kapitelsprung, Seek und
+# Fortschrittsanzeige an eingebetteten Kapiteln pruefbar sind.
+m4b "$MEDIA/audiobooks/WasIstWas/Sonnensystem.m4b" 300 "Sonnensystem" 60
 
 # NATÜRLICHE SORTIERUNG: 1..10 sortiert alphabetisch falsch (10 vor 2).
 for i in $(seq 1 10); do

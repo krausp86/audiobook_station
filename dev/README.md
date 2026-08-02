@@ -22,6 +22,19 @@ dev/seed-db.sh                                  # optional: Hörfortschritte ein
 legen das Schema an. Das Schema wird hier bewusst nicht dupliziert, sonst
 driftet es gegen `app/src/main/db/migrations.ts`.
 
+## Kacheln prüfen, ohne die App zu starten
+
+```bash
+node dev/show-units.mjs             # heutige + geplante Regel + Diff
+node dev/show-units.mjs --current   # nur die heutige
+node dev/show-units.mjs --new       # nur die geplante
+```
+
+Liest `listallinfo` direkt aus MPD und wendet beide Gruppierungsregeln an — die
+heutige aus `library/list.ts:106-124` und die geplante Ordnerregel aus
+`tasks/feature-playlists.md`. Beim Umbau der Gruppierung ist das der schnellste
+Vorher-Nachher-Vergleich; Stand jetzt: **15 → 13 Kacheln**.
+
 ## Was wohin zeigt
 
 | Variable | Lokal | Auf dem Pi |
@@ -46,7 +59,8 @@ denen das aktuelle Gruppierungsmodell scheitert (siehe `tasks/feature-playlists.
 | Pfad | Testet |
 |------|--------|
 | `audiobooks/WasIstWas/{Dinosaurier,Weltraum}/` | Navigationsordner mit zwei Einheiten darunter |
-| `audiobooks/WasIstWas/Sonnensystem.m4b` | **gemischter Ordner** — Unterordner *und* lose Datei |
+| `audiobooks/WasIstWas/Dinosaurier/` **3 × 150 s** | Seek, −15 s/+30 s, Resume über Spurgrenze |
+| `audiobooks/WasIstWas/Sonnensystem.m4b` **300 s, 5 Kapitel** | **gemischter Ordner** — Unterordner *und* lose Datei; Kapitelsprünge |
 | `audiobooks/Benjamin Bluemchen/Im Zoo/1..10.mp3` | natürliche Sortierung (`10` vor `2`) |
 | `audiobooks/Einzelhoerbuch.m4b` | lose Datei direkt im Typ-Ordner (`list.ts:121`) |
 | `audiobooks/Lange Reihe/Der Schatz/CD{1,2}/` | Verschachtelungstiefe, Mehrfach-Datenträger |
@@ -56,14 +70,13 @@ denen das aktuelle Gruppierungsmodell scheitert (siehe `tasks/feature-playlists.
 | `music/Kinderlieder/Lieblingslieder/` | selbst zusammengestellt, enthält eine **Kopie** (Fall E4) |
 | `music/Umlaute & Zeichen/…"Quote"…` | Escaping Richtung MPD (`control.ts:25-26`) |
 
-M4B-Dateien haben eingebettete Kapitel, damit die M4-Kapitellogik greift.
+M4B-Dateien haben eingebettete Kapitel, damit die M4-Kapitellogik greift. Die meisten
+Tracks sind absichtlich nur 4–6 s lang, damit der Bestand klein bleibt (~2,5 MB
+insgesamt); die beiden oben fett markierten Einheiten sind lang genug für Seek,
+Sprünge und Resume über Spurgrenzen.
 
 ## Grenzen
 
-- **`npm test` ist teilweise blind.** Sechs Tests (`resume.test.ts`) scheitern an einem
-  ABI-Konflikt, nicht an der Logik: `better-sqlite3` ist gegen Electron gebaut, vitest
-  läuft auf System-Node. Siehe **DEV-01** in `tasks/known-issues.md`. Diese Umgebung
-  ersetzt die Lücke nicht — sie macht sie nur sichtbar.
 - **Cover bleiben leer bzw. zeigen ein kaputtes Bildsymbol.** `Cover.tsx:51` lädt
   Cover als `file://`-URL. In der Entwicklung kommt der Renderer von
   `http://localhost:5173`, und Chromium blockiert `file://`-Subressourcen von einem

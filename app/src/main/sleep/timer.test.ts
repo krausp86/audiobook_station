@@ -578,8 +578,14 @@ describe('sleep/timer', () => {
     });
   });
 
-  describe('automatic cancellation on manual pause', () => {
-    it('should auto-cancel timer if user pauses playback', async () => {
+  // Spezifikation: m7-tasks.md:405-408 (T7.C2, Punkt 7)
+  //   „Wenn während des Timers das Medium pausiert/gestoppt wird (User), soll der
+  //    Timer weiterlaufen (Countdown ist Wandzeit) — aber das Fade-Out nur greifen,
+  //    wenn tatsächlich `playing`. Bei Stop durch User vor Ablauf: Timer cancelt
+  //    sich selbst."
+  // Pause → weiterlaufen. Stop → abbrechen. Nur Letzteres ist eine Cancellation.
+  describe('reaction to manual pause/stop', () => {
+    it('should keep the timer running if user pauses playback', async () => {
       vi.mocked(getState).mockResolvedValue({
         status: 'playing',
         currentPath: 'audiobooks/Test/Book/01.mp3',
@@ -606,11 +612,49 @@ describe('sleep/timer', () => {
         currentChapterIndex: null,
       });
 
-      // Advance timer by one tick
-      vi.advanceTimersByTime(1000);
-      await vi.runAllTimersAsync();
+      // Ein paar Ticks weiterlaufen lassen — bewusst NICHT runAllTimersAsync(),
+      // das würde die vollen 15 Minuten durchlaufen und den Timer regulär beenden.
+      await vi.advanceTimersByTimeAsync(3000);
 
-      // Timer should have been auto-cancelled
+      // Pause ist kein Abbruch: Countdown ist Wandzeit und läuft weiter.
+      expect(windowSends).not.toContainEqual(
+        expect.objectContaining({ channel: 'sleep:ended' }),
+      );
+      expect(windowSends.some((s) => s.channel === 'sleep:tick')).toBe(true);
+
+      const state = getSleep();
+      expect(state.active).toBe(true);
+    });
+
+    it('should auto-cancel timer if user stops playback', async () => {
+      vi.mocked(getState).mockResolvedValue({
+        status: 'playing',
+        currentPath: 'audiobooks/Test/Book/01.mp3',
+        currentUnitPath: 'audiobooks/Test/Book',
+        position: 100,
+        duration: 3600,
+        volume: 50,
+        chapters: [],
+        currentChapterIndex: null,
+      });
+
+      await startSleep('min15');
+      windowSends = [];
+
+      // Simulate user stopping — laut Spec der einzige Fall, der abbricht
+      vi.mocked(getState).mockResolvedValue({
+        status: 'stopped',
+        currentPath: null,
+        currentUnitPath: null,
+        position: 0,
+        duration: 0,
+        volume: 50,
+        chapters: [],
+        currentChapterIndex: null,
+      });
+
+      await vi.advanceTimersByTimeAsync(1000);
+
       expect(windowSends).toContainEqual(
         expect.objectContaining({
           channel: 'sleep:ended',

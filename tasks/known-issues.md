@@ -16,7 +16,49 @@ Audit-Findings behalten ihre ursprüngliche ID (K/W/N/M aus dem jeweiligen Audit
 
 ## Offen
 
-### DEV-01 — `npm test` kann alle DB-Tests nicht ausführen 🔴
+### DEV-01 — `npm test` kann alle DB-Tests nicht ausführen ✅ BEHOBEN
+
+**Gefunden und behoben:** 2026-08-02 · **Suite jetzt: 169/169 grün** (vorher 161/168)
+
+**Lösung:** vitest läuft nicht mehr unter dem System-Node, sondern unter **Electrons**
+Node (`app/scripts/run-tests.mjs`, via `ELECTRON_RUN_AS_NODE=1`). Damit stimmt die ABI
+ohne zweiten Build von `better-sqlite3` und ohne Mocks für die DB-Schicht.
+`npm test` und `npm run test:watch` nutzen den Runner; `npm run test:system-node`
+bleibt als direkter vitest-Aufruf erhalten.
+
+**Drei defekte Tests, die dadurch sichtbar wurden** — jedes Mal lag der Test falsch,
+nicht der Code:
+
+1. `resume.test.ts` erwartete bei „kein Resume" **null** MPD-Kommandos. `resumeLast()`
+   normalisiert `repeat/single/consume` aber bewusst *vor* der Entscheidung, weil MPD
+   diese Flags aus seiner state-Datei wiederherstellt (`resume.ts:17-21`). Test auf
+   „keine *Wiedergabe*-Kommandos" umgestellt.
+2. `timer.test.ts` erwartete, dass der Schlaf-Timer bei **Pause** abbricht.
+   `m7-tasks.md:405-408` spezifiziert das Gegenteil: bei Pause **weiterlaufen**
+   (Countdown ist Wandzeit), nur bei **Stop** abbrechen — und genau das tut
+   `timer.ts:226-228`. Test korrigiert; der spezifizierte Stop-Fall war überhaupt nicht
+   abgedeckt und hat jetzt einen eigenen Test.
+3. `pipeline.test.ts > should handle errors gracefully (no throw)` ging **echt ins
+   Internet**. Da `artist` gesetzt ist, lief `resolveCover()` bis MusicBrainz/Cover Art
+   Archive durch (der Nachbartest lässt `artist` genau deshalb weg) und riss bei
+   langsamem Netz den 5-s-Timeout — etwa jeder zwölfte Lauf war rot. `fetch` wird jetzt
+   im Test gemockt und wirft: Ein Test namens „handle errors gracefully" soll den Fehler
+   selbst erzeugen, statt zu hoffen, dass das Netz einen liefert.
+   Verifiziert über 15 aufeinanderfolgende Läufe, 0 Fehlschläge.
+
+Die ursprüngliche Beschreibung des Problems:
+
+**Ursache:** `postinstall` ruft `electron-builder install-app-deps` und baut
+`better-sqlite3` gegen **Electrons** ABI (140). Vitest lief aber auf dem **System-Node**
+(hier v20.20.2, ABI 115). Beides gleichzeitig geht mit einem Build nicht.
+
+Das erklärt rückblickend die Feststellung aus `m4-audit-2.md:282`, dass die
+Testabdeckung dünner ist als sie aussieht — die Absicherung des T4.00-Fixes lief nie.
+
+---
+
+<details>
+<summary>Ursprüngliche Fassung (2026-08-02, vor der Behebung)</summary>
 
 **Gefunden:** 2026-08-02 beim Aufsetzen der lokalen Testumgebung · **Schwere:** Major (Testabdeckung)
 
@@ -54,6 +96,12 @@ zerschießt dafür die App, bis `postinstall` wieder läuft.
 **Siebter roter Test:** `src/main/sleep/timer.test.ts > should auto-cancel timer if user
 pauses playback` ist zeitabhängig und **flaky** — mal rot, mal grün. Eigenes, kleineres
 Problem.
+
+> Korrektur: Der Test war **nicht** flaky. Unter dem Electron-Runner scheiterte er
+> 3 von 3 Läufen reproduzierbar. Der Wechsel zwischen 7 und 8 roten Tests kam vom
+> instabilen System-Node-Lauf, nicht von diesem Test.
+
+</details>
 
 ---
 
