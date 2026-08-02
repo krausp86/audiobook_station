@@ -64,6 +64,15 @@ M4B-Dateien haben eingebettete Kapitel, damit die M4-Kapitellogik greift.
   ABI-Konflikt, nicht an der Logik: `better-sqlite3` ist gegen Electron gebaut, vitest
   läuft auf System-Node. Siehe **DEV-01** in `tasks/known-issues.md`. Diese Umgebung
   ersetzt die Lücke nicht — sie macht sie nur sichtbar.
+- **Cover bleiben leer bzw. zeigen ein kaputtes Bildsymbol.** `Cover.tsx:51` lädt
+  Cover als `file://`-URL. In der Entwicklung kommt der Renderer von
+  `http://localhost:5173`, und Chromium blockiert `file://`-Subressourcen von einem
+  `http://`-Origin. Am Gerät wird der Renderer selbst per `file://` geladen, dort
+  funktioniert es. **Cover-Darstellung ist lokal also nicht beurteilbar** — Gruppierung,
+  Navigation, Kapitel und Resume schon.
+  Kurioserweise sieht man den Effekt erst nach ein paar Sekunden: Solange kein Cover
+  im Cache liegt, greift die Buchstaben-Ersatzdarstellung; sobald der Hintergrund-Fetch
+  eines geschrieben hat, kippt die Kachel auf das kaputte Bild.
 - **Fenstergröße stimmt nicht mit dem Gerät überein.** `createWindow()` setzt
   800 × 480 (`src/main/index.ts:22`), der Fenstermanager macht daraus lokal aber ein
   größeres Fenster — der Inhalt bleibt 800 × 480, darunter und rechts ist leerer

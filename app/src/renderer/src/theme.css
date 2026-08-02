@@ -162,3 +162,26 @@ html, body, #root {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Nur Entwicklung: Mauszeiger sichtbar machen.
+
+   Das Kiosk-CSS oben blendet den Cursor aus, weil das Gerät per Touch
+   bedient wird. Auf dem Entwicklungsrechner gibt es keinen Touchscreen —
+   ohne Zeiger lässt sich die App dort nicht steuern.
+
+   Das Attribut setzt main.tsx nur bei import.meta.env.DEV; im
+   Produktions-Build existiert es nicht, das Kiosk-Verhalten bleibt also
+   am Gerät unverändert.
+   ───────────────────────────────────────────────────────────────────────── */
+html[data-dev='true'],
+html[data-dev='true'] body,
+html[data-dev='true'] .pressable {
+  cursor: default;
+}
+
+html[data-dev='true'] .pressable,
+html[data-dev='true'] button,
+html[data-dev='true'] [role='button'] {
+  cursor: pointer;
+}
