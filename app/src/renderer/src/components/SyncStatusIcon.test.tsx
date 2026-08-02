@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { SyncState, SyncLogEntry } from '@shared/ipc-contract';
 
@@ -16,6 +16,19 @@ import SyncStatusIcon from './SyncStatusIcon';
 
 const mockInvoke = vi.fn();
 const mockOn = vi.fn();
+
+/**
+ * Tippen simulieren.
+ *
+ * `Pressable` loest `onTap` aus `onPointerUp` aus — passend fuer den Touchscreen des
+ * Geraets, aber ein reines `element.click()` erreicht es damit nie. Die Tests hier
+ * benutzten genau das und konnten deshalb nie funktionieren; aufgefallen ist es erst,
+ * als die Datei ueberhaupt ausgefuehrt wurde (DEV-02).
+ */
+function tap(el: Element): void {
+  fireEvent.pointerDown(el, { clientX: 0, clientY: 0 });
+  fireEvent.pointerUp(el, { clientX: 0, clientY: 0 });
+}
 
 describe('SyncStatusIcon', () => {
   beforeEach(() => {
@@ -68,7 +81,7 @@ describe('SyncStatusIcon', () => {
 
   describe('State rendering - Idle', () => {
     it('should render idle state with correct aria label', async () => {
-      mockInvoke.mockResolvedValue({ state: 'idle' } as {
+      mockInvoke.mockResolvedValue({ state: 'idle', entries: [] } as {
         state: SyncState;
       });
       render(<SyncStatusIcon />);
@@ -80,7 +93,7 @@ describe('SyncStatusIcon', () => {
     });
 
     it('should render checkmark SVG for idle state', async () => {
-      mockInvoke.mockResolvedValue({ state: 'idle' } as {
+      mockInvoke.mockResolvedValue({ state: 'idle', entries: [] } as {
         state: SyncState;
       });
       const { container } = render(<SyncStatusIcon />);
@@ -96,7 +109,7 @@ describe('SyncStatusIcon', () => {
 
   describe('State rendering - Running', () => {
     it('should render running state with correct aria label', async () => {
-      mockInvoke.mockResolvedValue({ state: 'running' } as {
+      mockInvoke.mockResolvedValue({ state: 'running', entries: [] } as {
         state: SyncState;
       });
       render(<SyncStatusIcon />);
@@ -108,7 +121,7 @@ describe('SyncStatusIcon', () => {
     });
 
     it('should render spinning refresh icon for running state', async () => {
-      mockInvoke.mockResolvedValue({ state: 'running' } as {
+      mockInvoke.mockResolvedValue({ state: 'running', entries: [] } as {
         state: SyncState;
       });
       const { container } = render(<SyncStatusIcon />);
@@ -124,7 +137,7 @@ describe('SyncStatusIcon', () => {
 
   describe('State rendering - Error', () => {
     it('should render error state with correct aria label', async () => {
-      mockInvoke.mockResolvedValue({ state: 'error' } as {
+      mockInvoke.mockResolvedValue({ state: 'error', entries: [] } as {
         state: SyncState;
       });
       render(<SyncStatusIcon />);
@@ -136,7 +149,7 @@ describe('SyncStatusIcon', () => {
     });
 
     it('should load error log on error state', async () => {
-      mockInvoke.mockResolvedValue({ state: 'error' } as {
+      mockInvoke.mockResolvedValue({ state: 'error', entries: [] } as {
         state: SyncState;
       });
       render(<SyncStatusIcon />);
@@ -147,7 +160,7 @@ describe('SyncStatusIcon', () => {
     });
 
     it('should render warning triangle SVG for error state', async () => {
-      mockInvoke.mockResolvedValue({ state: 'error' } as {
+      mockInvoke.mockResolvedValue({ state: 'error', entries: [] } as {
         state: SyncState;
       });
       const { container } = render(<SyncStatusIcon />);
@@ -171,7 +184,7 @@ describe('SyncStatusIcon', () => {
         return vi.fn();
       });
 
-      mockInvoke.mockResolvedValue({ state: 'idle' } as {
+      mockInvoke.mockResolvedValue({ state: 'idle', entries: [] } as {
         state: SyncState;
       });
       render(<SyncStatusIcon />);
@@ -197,7 +210,7 @@ describe('SyncStatusIcon', () => {
         return vi.fn();
       });
 
-      mockInvoke.mockResolvedValue({ state: 'running' } as {
+      mockInvoke.mockResolvedValue({ state: 'running', entries: [] } as {
         state: SyncState;
       });
       render(<SyncStatusIcon />);
@@ -217,7 +230,7 @@ describe('SyncStatusIcon', () => {
 
   describe('Error overlay', () => {
     it('should not show overlay by default', async () => {
-      mockInvoke.mockResolvedValue({ state: 'idle' } as {
+      mockInvoke.mockResolvedValue({ state: 'idle', entries: [] } as {
         state: SyncState;
       });
       const { container } = render(<SyncStatusIcon />);
@@ -240,10 +253,12 @@ describe('SyncStatusIcon', () => {
         expect(mockInvoke).toHaveBeenCalledWith('sync:getState', undefined);
       });
 
-      const button = screen.getByRole('button', {
+      // findByRole statt getByRole: der Fehlerzustand kommt asynchron aus
+      // sync:getState, vorher steht dort noch das Idle-Symbol.
+      const button = await screen.findByRole('button', {
         name: 'sync.icon.error',
       });
-      button.click();
+      tap(button);
 
       await waitFor(() => {
         expect(
@@ -271,6 +286,10 @@ describe('SyncStatusIcon', () => {
 
       const { container } = render(<SyncStatusIcon />);
 
+      // Die Meldung steht im Overlay — das muss erst geoeffnet werden.
+      const button = await screen.findByRole('button', { name: 'sync.icon.error' });
+      tap(button);
+
       await waitFor(() => {
         expect(container.textContent).toContain('Network timeout');
       });
@@ -283,10 +302,12 @@ describe('SyncStatusIcon', () => {
       });
       const { container } = render(<SyncStatusIcon />);
 
-      const button = screen.getByRole('button', {
+      // findByRole statt getByRole: der Fehlerzustand kommt asynchron aus
+      // sync:getState, vorher steht dort noch das Idle-Symbol.
+      const button = await screen.findByRole('button', {
         name: 'sync.icon.error',
       });
-      button.click();
+      tap(button);
 
       await waitFor(() => {
         expect(
@@ -297,7 +318,7 @@ describe('SyncStatusIcon', () => {
       const closeButton = screen.getByRole('button', {
         name: 'sync.details.close',
       });
-      closeButton.click();
+      tap(closeButton);
 
       await waitFor(() => {
         expect(
@@ -313,10 +334,12 @@ describe('SyncStatusIcon', () => {
       });
       const { container } = render(<SyncStatusIcon />);
 
-      const button = screen.getByRole('button', {
+      // findByRole statt getByRole: der Fehlerzustand kommt asynchron aus
+      // sync:getState, vorher steht dort noch das Idle-Symbol.
+      const button = await screen.findByRole('button', {
         name: 'sync.icon.error',
       });
-      button.click();
+      tap(button);
 
       await waitFor(() => {
         const scrim = container.querySelector('.sync-details-scrim');
@@ -341,10 +364,12 @@ describe('SyncStatusIcon', () => {
       });
       const { container } = render(<SyncStatusIcon />);
 
-      const button = screen.getByRole('button', {
+      // findByRole statt getByRole: der Fehlerzustand kommt asynchron aus
+      // sync:getState, vorher steht dort noch das Idle-Symbol.
+      const button = await screen.findByRole('button', {
         name: 'sync.icon.error',
       });
-      button.click();
+      tap(button);
 
       await waitFor(() => {
         const dialog = container.querySelector(

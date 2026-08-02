@@ -139,7 +139,11 @@ describe('LibraryGrid + SyncStatusIcon Integration', () => {
       ],
       all: [
         {
-          path: 'audiobooks/Author/Title2',
+          // Liegt DIREKT in `audiobooks` und ist damit auf dieser Ebene eine
+          // Einheit. Läge es tiefer (`audiobooks/Author/Title2`), erschiene
+          // stattdessen eine Ordner-Kachel „Author" — siehe die
+          // Navigations-Tests in LibraryGrid.navigation.test.tsx.
+          path: 'audiobooks/Title2',
           type: 'audiobook',
           title: 'Title2',
           progressPercent: 0,
@@ -152,7 +156,10 @@ describe('LibraryGrid + SyncStatusIcon Integration', () => {
       <LibraryGrid
         type="audiobook"
         data={dataWithItems}
+        dir="audiobooks"
         onBack={mockOnBack}
+        onHome={vi.fn()}
+        onOpenFolder={vi.fn()}
         onPlay={mockOnPlay}
         onOpenDetail={mockOnOpenDetail}
       />,
@@ -182,7 +189,10 @@ describe('LibraryGrid + SyncStatusIcon Integration', () => {
       <LibraryGrid
         type="music"
         data={mockData}
+        dir="music"
         onBack={mockOnBack}
+        onHome={vi.fn()}
+        onOpenFolder={vi.fn()}
         onPlay={mockOnPlay}
         onOpenDetail={mockOnOpenDetail}
       />,

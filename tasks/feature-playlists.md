@@ -1,8 +1,8 @@
 # Feature: Ordnerstruktur als Gruppierungsmodell + Ordner-Verwaltung im Web
 
 **Projekt:** Hörmond — KinderMediaPlayer
-**Status:** ✅ **Gruppierungsregel umgesetzt** (Branch `ordnermodell`, 2026-08-02).
-Offen: Migration bestehender Fortschritte, Navigation am Gerät, Web-Dateimanager —
+**Status:** ✅ **Gruppierungsregel, Fortschritts-Abgleich und Geräte-Navigation umgesetzt**
+(Branch `ordnermodell`, 2026-08-02). Offen ist nur noch der Web-Dateimanager —
 siehe „Was noch fehlt" am Ende.
 **Erstellt:** 2026-08-02
 **Abhängig von:** Web-Upload-Portal (`feature-web-upload.md`) als Editier-Oberfläche
@@ -349,9 +349,12 @@ Der Grid zeigt jetzt **eine Ebene** des Baums. Umgesetzt:
 Der Baum wird im Renderer aus den Unit-Pfaden abgeleitet (`lib/folder-tree.ts`,
 17 Tests) — kein zusätzlicher IPC-Aufruf, keine Änderung am Architektur-Grundvertrag.
 
-**Noch offen dazu:** eine Tiefenbegrenzung ist nicht eingebaut (der Baum ist so tief wie
-das Dateisystem), und Komponententests fehlen wegen **DEV-02**. Geprüft wurde die
-Ableitungslogik als Unit-Test und die Oberfläche visuell am laufenden Gerät.
+Abgesichert durch `lib/folder-tree.test.ts` (17 Tests, Ableitungslogik) und
+`screens/LibraryGrid.navigation.test.tsx` (14 Tests, Komponentenverhalten), dazu visuell
+am laufenden Gerät geprüft.
+
+**Noch offen dazu:** eine Tiefenbegrenzung ist nicht eingebaut — der Baum ist so tief wie
+das Dateisystem.
 
 ### 3. Web-Dateimanager (E5)
 

@@ -65,8 +65,20 @@ describe('S1Start + SyncStatusIcon Integration', () => {
     const header = container.querySelector('.s1-logo');
     expect(header).toBeInTheDocument();
 
+    const wordmark = container.querySelector('.s1-wordmark');
     const syncIconContainer = container.querySelector('.s1-sync-icon');
-    expect(syncIconContainer).toHaveStyle({ marginLeft: 'auto' });
+    expect(wordmark).toBeInTheDocument();
+    expect(syncIconContainer).toBeInTheDocument();
+
+    // Geprüft wird die DOM-Reihenfolge, nicht `margin-left: auto`.
+    // jsdom lädt `screens.css` nicht, dort stünde also immer der leere
+    // Standardwert — die frühere Zusage konnte gar nicht halten. Dass das nie
+    // auffiel, lag daran, dass diese Datei nie ausgeführt wurde (DEV-02).
+    // Die tatsächliche Platzierung gehört ohnehin ins CSS und wird am Gerät
+    // beurteilt, nicht im Unit-Test.
+    expect(wordmark!.compareDocumentPosition(syncIconContainer!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
   });
 
   it('should render logo and wordmark as before', () => {

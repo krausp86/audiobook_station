@@ -16,7 +16,49 @@ Audit-Findings behalten ihre ursprüngliche ID (K/W/N/M aus dem jeweiligen Audit
 
 ## Offen
 
-### DEV-02 — Drei Komponententests laufen überhaupt nicht 🔴
+### DEV-02 — Drei Komponententests liefen überhaupt nicht ✅ BEHOBEN
+
+**Gefunden und behoben:** 2026-08-02 · **Suite jetzt: 265/265 grün** (vorher 222, alle aus dem Main-Prozess)
+
+**Lösung:**
+- `jsdom`, `@testing-library/react` und `@testing-library/jest-dom` als devDependencies
+- `vitest.config.ts` auf **zwei Projekte** umgestellt: `main` (Node) und `renderer`
+  (jsdom, mit React-Plugin und `.tsx` im `include`)
+- `src/renderer/test-setup.ts` bringt die DOM-Matcher mit und räumt nach jedem Test auf
+
+Das Aufräumen ist nötig, weil Testing Library sein Auto-Cleanup nur bei `globals: true`
+selbst registriert. Ohne das sammelte sich das DOM über die Tests hinweg an, und
+`getByRole('button', …)` fand plötzlich mehrere Treffer.
+
+**Vier Defekte, die dadurch erst sichtbar wurden** — die Tests waren nie gelaufen und
+entsprechend nie gültig:
+
+1. `SyncStatusIcon.test.tsx` tippte per `element.click()`. `Pressable` löst `onTap` aber
+   aus `onPointerUp` aus — passend für den Touchscreen, per `click` unerreichbar. Jetzt
+   über `fireEvent.pointerDown` + `pointerUp`.
+2. Dieselbe Datei fragte den Fehlerzustand ab, bevor er asynchron geladen war
+   (`getByRole` statt `findByRole`).
+3. Ihre Attrappen verletzten den IPC-Vertrag: `sync:getLog` liefert laut
+   `ipc-contract.ts:186` immer `{ entries: [] }`, die Mocks ließen `entries` weg. Das
+   erzeugte unbehandelte Promise-Rejections in der Komponente. Korrigiert wurden die
+   **Attrappen**, nicht die Komponente — der Vertrag ist eindeutig und der Handler hält ihn.
+4. `S1Start.integration.test.tsx` prüfte `toHaveStyle({ marginLeft: 'auto' })`. jsdom lädt
+   `screens.css` nicht, die Zusage konnte also nie halten. Ersetzt durch eine Prüfung der
+   DOM-Reihenfolge — das ist der Teil, den ein Unit-Test tatsächlich verantworten kann.
+
+Zusätzlich: `LibraryGrid.navigation.test.tsx` mit 14 Tests für die Ordner-Navigation,
+die vorher nur über die Ableitungslogik abgesichert war.
+
+**Achtung bei `npm install`:** Es baut `better-sqlite3` gegen die **Node**-ABI und macht
+damit die App startunfähig. Danach immer `npm run postinstall` — das stellt den
+Electron-Build wieder her. Verifiziert: Suite läuft unter dem Electron-Runner, unter
+System-Node scheitern die DB-Tests weiterhin (so soll es sein), und die App startet
+ohne ABI-Fehler.
+
+---
+
+<details>
+<summary>Ursprüngliche Fassung (2026-08-02, vor der Behebung)</summary>
 
 **Gefunden:** 2026-08-02 beim Bau der Ordner-Navigation · **Schwere:** Major (Testabdeckung)
 
@@ -44,6 +86,8 @@ heißt es: **Für den Renderer gibt es derzeit keine einzige laufende Prüfung.*
 bringen. Die Ordner-Navigation ist deshalb bislang nur über die reine Ableitungslogik
 abgesichert (`lib/folder-tree.test.ts`, 17 Tests) und visuell am laufenden Gerät geprüft
 — nicht über die Komponenten selbst.
+
+</details>
 
 
 ### DEV-01 — `npm test` kann alle DB-Tests nicht ausführen ✅ BEHOBEN
