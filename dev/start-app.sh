@@ -32,6 +32,15 @@ export HOERMOND_SYNC_LOG="$DEV_DIR/sync.log"
 export HOERMOND_BACKLIGHT_PATH="$DEV_DIR/fake-backlight"
 export HOERMOND_DISPLAY_TIMEOUT="3600000"  # 1 h statt 5 min — kein Blank beim Entwickeln
 
+# Electrons SUID-Sandbox-Helper muss root:root und 4755 sein. Nach einem
+# frischen `npm install` gehoert er dem eigenen User, und Electron bricht mit
+# "SUID sandbox helper binary ... is not configured correctly" ab.
+# Fuer die lokale Entwicklung reicht es, die Sandbox abzuschalten.
+# Dauerhafte Alternative (braucht sudo, ueberlebt kein npm install):
+#   sudo chown root:root app/node_modules/electron/dist/chrome-sandbox
+#   sudo chmod 4755      app/node_modules/electron/dist/chrome-sandbox
+export ELECTRON_DISABLE_SANDBOX=1
+
 echo "Lokale Testumgebung:"
 echo "  MPD        127.0.0.1:$HOERMOND_MPD_PORT"
 echo "  Medien     $HOERMOND_MEDIA_ROOT"

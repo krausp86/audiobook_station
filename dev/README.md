@@ -64,6 +64,15 @@ M4B-Dateien haben eingebettete Kapitel, damit die M4-Kapitellogik greift.
   ABI-Konflikt, nicht an der Logik: `better-sqlite3` ist gegen Electron gebaut, vitest
   läuft auf System-Node. Siehe **DEV-01** in `tasks/known-issues.md`. Diese Umgebung
   ersetzt die Lücke nicht — sie macht sie nur sichtbar.
+- **Fenstergröße stimmt nicht mit dem Gerät überein.** `createWindow()` setzt
+  800 × 480 (`src/main/index.ts:22`), der Fenstermanager macht daraus lokal aber ein
+  größeres Fenster — der Inhalt bleibt 800 × 480, darunter und rechts ist leerer
+  Hintergrund. Für Layout-Urteile also nur den oberen linken Bereich heranziehen.
+- **Electron-Sandbox ist lokal abgeschaltet.** Nach `npm install` gehört
+  `chrome-sandbox` dem eigenen User statt root, und Electron bricht ab. `start-app.sh`
+  setzt deshalb `ELECTRON_DISABLE_SANDBOX=1`. Wer es sauber will:
+  `sudo chown root:root` + `sudo chmod 4755` auf
+  `app/node_modules/electron/dist/chrome-sandbox` — überlebt aber kein `npm install`.
 - **Kein Ton.** MPD nutzt einen Null-Output und spielt in Echtzeit ins Nichts.
   Positionen, Kapitelsprünge und Resume verhalten sich wie mit echtem Audio.
 - **MPD-Version weicht ab.** Der Container liefert MPD 0.21.11; auf dem Pi läuft
