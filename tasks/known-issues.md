@@ -275,9 +275,34 @@ Aus `m4-audit.md` nie explizit abgearbeitet, beim nächsten Anfassen der Stellen
 
 ---
 
-### GRP-01 — Titel-Ableitung weicht zwischen Bibliothek und Fortschritt ab 🔴
+### MIG-01 — Musik-Fortschritte zeigen nach der Modellumstellung ins Leere 🔴
+
+**Gefunden:** 2026-08-02 mit der Umstellung auf das Ordnermodell · **Schwere:** Major
+· **Blockiert das Deployment auf den Pi**
+
+`playback_position.media_path` enthielt für Musik **virtuelle** Pfade
+(`music/<AlbumArtist>/<Album>`). Seit der Ordnergruppierung gibt es die nicht mehr — die
+Zeilen verweisen auf Einheiten, die nicht existieren. Das Kind verliert bei Musik die Stelle.
+
+**Hörbücher sind weitgehend nicht betroffen:** Alte 3-Segment-Regel und neue Ordnerregel
+liefern für `audiobooks/Autor/Titel/…` denselben Pfad. Betroffen sind nur lose Dateien in
+Navigationsordnern und Bestände mit vier oder mehr Ebenen.
+
+**Eine SQL-Migration reicht nicht.** Die Abbildung virtueller Musikpfade auf echte Ordner
+braucht die Tag-Zuordnung aus MPD. Nötig wäre ein einmaliger Abgleich beim Start, sobald
+MPD verfügbar ist — oder die bewusste Entscheidung, den Musik-Fortschritt zu verwerfen.
+
+Details in `tasks/feature-playlists.md`, Abschnitt „Was noch fehlt".
+
+---
+
+<details>
+<summary>GRP-01 — Titel-Ableitung wich zwischen Bibliothek und Fortschritt ab ✅ (behoben mit dem Ordnermodell)</summary>
 
 **Gefunden:** 2026-08-02 beim Zusammenziehen der Gruppierungslogik · **Schwere:** Minor
+**Behoben:** 2026-08-02 mit der Umstellung auf das Ordnermodell — `displayTitleFor()` in
+`library/grouping.ts` ist jetzt für beide Seiten zuständig. Titel ist der **Ordnername**;
+nur bei Einzelsongs greift der `Title`-Tag, ersatzweise der Dateiname ohne Endung.
 
 Der Unit-Pfad ist seit dem Refactor überall identisch (`library/grouping.ts`), die
 **Titel**-Ableitung aber nicht:
@@ -294,7 +319,9 @@ nur dort auf, wo `media.title` direkt gelesen wird.
 
 Beim Refactor **bewusst unverändert gelassen** — eine Vereinheitlichung ist eine
 Verhaltensänderung und gehört zur Umstellung auf das Ordnermodell, wo der Titel ohnehin
-neu definiert wird (dann: der Ordnername).
+neu definiert wird (dann: der Ordnername). Genau so ist es dann auch gekommen.
+
+</details>
 
 ---
 

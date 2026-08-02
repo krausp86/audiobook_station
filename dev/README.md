@@ -31,9 +31,11 @@ node dev/show-units.mjs --new       # nur die geplante
 ```
 
 Liest `listallinfo` direkt aus MPD und wendet beide Gruppierungsregeln an — die
-heutige aus `library/list.ts:106-124` und die geplante Ordnerregel aus
-`tasks/feature-playlists.md`. Beim Umbau der Gruppierung ist das der schnellste
-Vorher-Nachher-Vergleich; Stand jetzt: **15 → 13 Kacheln**.
+alte tag-abgeleitete und die heute implementierte Ordnerregel aus
+`app/src/main/library/grouping.ts`. Auf dem Testbestand: **15 → 12 Kacheln**.
+
+`--current` zeigt weiterhin die alte Regel, damit der Vergleich erhalten bleibt; sie
+steckt nur noch in diesem Skript, nicht mehr in der App.
 
 ## Was wohin zeigt
 

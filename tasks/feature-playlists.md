@@ -1,7 +1,9 @@
 # Feature: Ordnerstruktur als Gruppierungsmodell + Ordner-Verwaltung im Web
 
 **Projekt:** Hörmond — KinderMediaPlayer
-**Status:** Notiz / Vorüberlegung — noch kein Entwurf, noch keine Tasks
+**Status:** ✅ **Gruppierungsregel umgesetzt** (Branch `ordnermodell`, 2026-08-02).
+Offen: Migration bestehender Fortschritte, Navigation am Gerät, Web-Dateimanager —
+siehe „Was noch fehlt" am Ende.
 **Erstellt:** 2026-08-02
 **Abhängig von:** Web-Upload-Portal (`feature-web-upload.md`) als Editier-Oberfläche
 **Betrifft:** M2 (Bibliothek), M4 (Kapitel/Resume), DB-Schema, **Design-Brief Kap. 3.2**
@@ -124,7 +126,33 @@ sie fasst `Der Schatz/CD1` und `CD2` **korrekt** zu einer Einheit zusammen. Ein 
 `dirname(file)` würde das kaputtmachen. Die Sonderregel für Datenträger-Ordner ist also
 keine Kür, sondern nötig, sobald die 3-Segment-Regel fällt.
 
-### Gegenprobe: was das Ordnermodell konkret ändert
+### Ergebnis nach der Umsetzung
+
+Nach dem Einbau (inklusive Datenträger-Sonderregel) sind es **15 → 12 Kacheln**,
+**ohne Regression**:
+
+```
+  − audiobooks/WasIstWas                     + audiobooks/WasIstWas/Sonnensystem.m4b
+  − music/Anna/Kinderhits                    + music/Sampler/Kinderhits
+  − music/Bernd/Kinderhits
+  − music/Clara/Kinderhits
+  − music/Diverse/Lieblingslieder            + music/Kinderlieder/Lieblingslieder
+  − music/Ohne Tags/track-a.mp3              + music/Ohne Tags
+  − music/Ohne Tags/track-b.mp3
+  − music/Übungskünstler/Sonderzeichen       + music/Umlaute & Zeichen
+```
+
+`audiobooks/Lange Reihe/Der Schatz` bleibt eine Einheit mit vier Dateien — die
+Datenträger-Regel greift, CD1 und CD2 fallen nicht mehr auseinander. Am MPD
+gegengeprüft: `add "audiobooks/Lange Reihe/Der Schatz"` liefert alle vier Tracks
+in richtiger Reihenfolge über die CD-Grenze hinweg, `add "music/Sampler/Kinderhits"`
+alle drei Sampler-Titel als eine Einheit.
+
+Die Titel sind jetzt durchweg die Ordnernamen: „Im Zoo", „Der Schatz", „Dinosaurier",
+„Kinderhits", „Lieblingslieder", „Ohne Tags" — und für den Einzelsong
+`Sonnensystem.m4b` der `Title`-Tag bzw. der Dateiname.
+
+### Die ursprüngliche Gegenprobe (vor der Umsetzung)
 
 `node dev/show-units.mjs` wendet beide Regeln auf denselben Bestand an. Ergebnis
 **15 → 13 Kacheln**:
@@ -285,9 +313,38 @@ sollte diesen Wechsel **vor dem Bestätigen anzeigen**, nicht klaglos ausführen
 
 ---
 
-## Vorbedingung
+## Was noch fehlt
 
-Eine **lokale Testumgebung** (siehe `dev-local-testing.md`). Diese Umstellung ändert die
-Bedeutung von `playback_position.media_path` für den gesamten Bestand und baut die
-Kinder-Navigation um — bei einem Gerät im Produktivbetrieb nichts, was man direkt am
-Pi ausprobiert.
+Die **Gruppierungsregel** ist umgesetzt (`app/src/main/library/grouping.ts` +
+`directory-index.ts`, 20 Tests). Drei Stücke stehen noch aus:
+
+### 1. Migration bestehender Fortschritte — ⚠️ blockiert das Deployment
+
+`playback_position.media_path` hat für Musik bisher **virtuelle** Werte der Form
+`music/<AlbumArtist>/<Album>`. Die zeigen nach der Umstellung auf nichts mehr — das Kind
+verliert bei jedem Musiktitel die Stelle. Für Hörbücher ist die Lage besser: Die alte
+3-Segment-Regel und die neue Ordnerregel liefern für die übliche Ablage
+(`audiobooks/Autor/Titel/…`) **denselben** Pfad, der Fortschritt bleibt also erhalten.
+Betroffen sind dort nur Sonderfälle (lose Dateien in einem Navigationsordner, Bestände
+mit vier oder mehr Ebenen).
+
+**Eine reine SQL-Migration reicht nicht:** Um einen virtuellen Musikpfad auf den echten
+Ordner abzubilden, muss man wissen, welche Dateien diese Tags tragen — das weiß nur MPD.
+Nötig wäre also eine einmalige Abgleich-Routine beim Start, sobald MPD verfügbar ist.
+
+**Vor jedem Deployment auf den Pi zu entscheiden:** Abgleich bauen, oder den
+Musik-Fortschritt bewusst verwerfen (bei Liedern verschmerzbar, bei Hörbüchern nicht —
+und die sind ja weitgehend nicht betroffen).
+
+### 2. Navigation am Gerät (E3)
+
+Der Renderer zeigt weiterhin ein flaches Grid. Navigationsordner erscheinen dort aktuell
+**gar nicht** — nur die Einheiten darunter. Das ist kein Fehler, sondern der Stand vor
+dem UI-Umbau: Die Gruppierung stimmt, die Hierarchie ist noch nicht sichtbar. Dafür
+braucht es Ordner-Kacheln, einen Navigationsstack und den Rettungsanker (siehe
+„Konflikt mit dem Design-Brief").
+
+### 3. Web-Dateimanager (E5)
+
+Anlegen, Umbenennen, Verschieben, Kopieren — kommt mit dem Portal
+(`feature-web-upload.md`).

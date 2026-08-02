@@ -3,12 +3,22 @@ import { getChapters, chapterIndexForPosition } from './chapters';
 import { getDb } from '../db';
 import { getMaxVolume } from '../db/dao';
 import { unitPathFor } from '../library/grouping';
+import { getDirectoryIndex } from '../library/directory-index';
 import type { PlayerState } from '@shared/ipc-contract';
 
 /**
- * Start playing a file from the media library.
- * Clears the current playlist, adds the file, and starts playback.
- * @param path relative path to file in /media (e.g. "audiobooks/Author/Title")
+ * Start playing a unit from the media library.
+ *
+ * Der Unit-Pfad ist im Ordnermodell immer ein **echter** Pfad — ein Verzeichnis
+ * (dann fügt MPD dessen Inhalt rekursiv und sortiert hinzu) oder eine einzelne
+ * Datei. Ein `add` genügt für beides.
+ *
+ * Früher gab es hier einen zweiten Zweig, der virtuelle Musik-Pfade der Form
+ * `music/<AlbumArtist>/<Album>` über `findadd` nach Tags auflöste — mitsamt
+ * Fallback auf den `Artist`-Tag, wenn `AlbumArtist` fehlte. Mit der
+ * Ordnergruppierung (`library/grouping.ts`) gibt es keine virtuellen Pfade mehr.
+ *
+ * @param path Unit-Pfad, z. B. `audiobooks/WasIstWas/Dinosaurier`
  * @param position optional seek position in seconds
  * @throws Error if MPD command fails
  */
@@ -18,23 +28,8 @@ export async function play(path: string, position?: number): Promise<void> {
   await mpd.send('repeat 0');
   await mpd.send('single 0');
 
-  const segments = path.split('/');
-  if (segments[0] === 'music' && segments.length >= 3) {
-    // Virtual music path — group by AlbumArtist+Album tags (flat file structure)
-    const albumArtist = segments[1];
-    const album = segments.slice(2).join('/');
-    const escArtist = albumArtist.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-    const escAlbum = album.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-    await mpd.send(`findadd albumartist "${escArtist}" album "${escAlbum}"`);
-    // If AlbumArtist tag is absent on the files, fall back to Artist tag
-    const [statusCheck] = await mpd.send('status');
-    if (!statusCheck || parseInt(statusCheck['playlistlength'] ?? '0', 10) === 0) {
-      await mpd.send(`findadd artist "${escArtist}" album "${escAlbum}"`);
-    }
-  } else {
-    const esc = path.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-    await mpd.send(`add "${esc}"`);
-  }
+  const esc = path.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  await mpd.send(`add "${esc}"`);
 
   await mpd.send('play');
   if (position && position > 0) {
@@ -219,7 +214,9 @@ export async function getState(): Promise<PlayerState> {
   }
 
   // Unit-Pfad passend zu MediaItem.path — gemeinsame Regel, siehe library/grouping.ts
-  const currentUnitPath = currentPath ? unitPathFor(currentPath, song ?? {}) : null;
+  const currentUnitPath = currentPath
+    ? unitPathFor(currentPath, await getDirectoryIndex())
+    : null;
 
   return {
     status: statusMap[mpdState as keyof typeof statusMap] ?? 'stopped',

@@ -2,7 +2,8 @@ import { getMpd } from '../mpd';
 import { getDb } from '../db';
 import { getAllPositions } from '../db/dao';
 import { sortLibrary } from './sort';
-import { unitPathFor, mediaTypeForPath } from './grouping';
+import { unitPathFor, mediaTypeForPath, displayTitleFor } from './grouping';
+import { primeDirectoryIndexFromFiles } from './directory-index';
 import { resolveCover } from '../cover';
 import type { MediaItem, LibraryListResponse, CoverPhase } from '@shared/ipc-contract';
 import type { BrowserWindow } from 'electron';
@@ -87,7 +88,13 @@ export async function listLibrary(
   const mpd = await getMpd();
   const files = await mpd.send('listallinfo');
 
-  // Group files by unit (audiobook or music album)
+  // Group files by unit (folder-based — see library/grouping.ts).
+  // Der Verzeichnisbaum steckt bereits in `files`; ihn hier zu setzen erspart
+  // dem Rest des Prozesses einen eigenen `listall`-Roundtrip.
+  const index = primeDirectoryIndexFromFiles(
+    files.map((f) => f['file']).filter((f): f is string => Boolean(f)),
+  );
+
   const units = new Map<
     string,
     { durations: number; type: 'audiobook' | 'music'; title: string; artist?: string }
@@ -97,9 +104,8 @@ export async function listLibrary(
     const file = f['file'];
     if (!file) continue;
 
-    const parts = file.split('/');
     const type = mediaTypeForPath(file);
-    const unitPath = unitPathFor(file, f);
+    const unitPath = unitPathFor(file, index);
 
     // Accumulate durations
     const dur = f['Time'] ? parseInt(f['Time'], 10) : 0;
@@ -107,16 +113,10 @@ export async function listLibrary(
     if (entry) {
       entry.durations += dur;
     } else {
-      const title = f['Album']
-        ?? (parts.length > 2 ? parts[parts.length - 2] : null)
-        ?? f['Title']
-        ?? parts[parts.length - 1]?.replace(/\.[^.]+$/, '')
-        ?? unitPath;
-
       units.set(unitPath, {
         durations: dur,
         type,
-        title,
+        title: displayTitleFor(unitPath, f['Title']),
         artist: f['AlbumArtist'] ?? f['Artist'],
       });
     }

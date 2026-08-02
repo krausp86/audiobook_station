@@ -2,7 +2,8 @@ import { getDb } from '../db';
 import { upsertPosition } from '../db/dao';
 import { getState } from '../mpd/control';
 import { getMpd } from '../mpd';
-import { unitPathFor, mediaTypeForPath } from '../library/grouping';
+import { unitPathFor, mediaTypeForPath, displayTitleFor } from '../library/grouping';
+import { getDirectoryIndex } from '../library/directory-index';
 
 const SAVE_INTERVAL_MS = 10_000;
 
@@ -20,34 +21,18 @@ async function saveNowInternal(): Promise<void> {
     const st = await getState();
     if (st.status !== 'playing' || !st.currentPath) return;
 
-    const parts = st.currentPath.split('/');
     const type = mediaTypeForPath(st.currentPath);
+    const unitPath = unitPathFor(st.currentPath, await getDirectoryIndex());
 
-    // Unit-Pfad über die gemeinsame Regel (library/grouping.ts). Für Musik werden
-    // dafür die Tags des laufenden Songs gebraucht, für Hörbücher nicht — deshalb
-    // der Roundtrip nur in diesem Zweig.
-    let song: Record<string, string> | undefined;
-    if (type === 'music') {
-      const mpd = await getMpd();
-      [song] = (await mpd.send('currentsong')) ?? [];
+    // Der `Title`-Tag wird nur für Einzelsongs gebraucht — bei einer Ordner-Einheit
+    // gewinnt ohnehin der Ordnername. Den Roundtrip also nur dann.
+    let titleTag: string | undefined;
+    if (unitPath === st.currentPath) {
+      const mpdForTags = await getMpd();
+      const [song] = (await mpdForTags.send('currentsong')) ?? [];
+      titleTag = song?.['Title'];
     }
-    const unitPath = unitPathFor(st.currentPath, song ?? {});
-
-    // Titel-Ableitung bleibt hier lokal: sie weicht bewusst von der in
-    // listLibrary ab (dort gewinnt der Album-Tag, hier der Ordnername) und
-    // landet nur per INSERT OR IGNORE in `media.title`. Siehe Kommentar unten.
-    let displayTitle: string;
-    if (type === 'music') {
-      displayTitle =
-        unitPath.startsWith('music/') && unitPath !== st.currentPath
-          ? (song?.['Album'] ?? unitPath)
-          : (song?.['Title'] ?? parts[parts.length - 1]?.replace(/\.[^.]+$/, '') ?? unitPath);
-    } else {
-      displayTitle =
-        parts.length > 2
-          ? (parts[parts.length - 2] ?? unitPath)
-          : (parts[parts.length - 1]?.replace(/\.[^.]+$/, '') ?? unitPath);
-    }
+    const displayTitle = displayTitleFor(unitPath, titleTag);
 
     const db = getDb();
 

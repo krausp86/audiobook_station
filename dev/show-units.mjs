@@ -68,13 +68,25 @@ function unitPathCurrent(f) {
   return unitPath;
 }
 
-// ── Regel 2: geplantes Ordnermodell ─────────────────────────────────────────
-// Ein Ordner OHNE Unterordner ist eine Einheit. Ein Ordner MIT Unterordnern ist
-// ein Navigationsordner; lose Dateien darin sind Einzelsongs mit eigener Kachel.
+// ── Regel 2: Ordnermodell ───────────────────────────────────────────────────
+// Spiegel von app/src/main/library/grouping.ts — dort ist der Ort der Wahrheit.
+// Ein eigenstaendiges Node-Skript kann kein TypeScript importieren, deshalb die
+// Kopie. Wer die Regel dort aendert, muss hier nachziehen.
+const DISC_DIR_PATTERN = /^(cd|disc|disk)[\s._-]*\d+$/i;
+const isDiscDir = (name) => DISC_DIR_PATTERN.test(name);
+
 function unitPathNew(f, dirsWithSubdirs) {
   const parts = f.file.split('/');
-  const dir = parts.slice(0, -1).join('/');
-  if (!dir) return f.file;
+  if (parts.length < 2) return f.file;
+
+  let dir = parts.slice(0, -1).join('/');
+  for (;;) {
+    const segments = dir.split('/');
+    const name = segments[segments.length - 1];
+    if (segments.length < 2 || !isDiscDir(name)) break;
+    dir = segments.slice(0, -1).join('/');
+  }
+
   return dirsWithSubdirs.has(dir) ? f.file : dir;
 }
 
@@ -86,7 +98,10 @@ function dirsHavingSubdirs(files) {
   }
   const withSub = new Set();
   for (const d of dirs) {
-    const parent = d.split('/').slice(0, -1).join('/');
+    const segments = d.split('/');
+    // Datentraeger-Ordner machen ihren Elternteil NICHT zum Navigationsordner.
+    if (isDiscDir(segments[segments.length - 1])) continue;
+    const parent = segments.slice(0, -1).join('/');
     if (parent) withSub.add(parent);
   }
   return withSub;

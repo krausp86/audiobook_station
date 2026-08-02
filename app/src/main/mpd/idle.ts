@@ -2,6 +2,7 @@ import { Socket } from 'net';
 import type { BrowserWindow } from 'electron';
 import { getState } from './control';
 import { invalidateChaptersCache } from './chapters';
+import { invalidateDirectoryIndex } from '../library/directory-index';
 
 const MPD_HOST = process.env['HOERMOND_MPD_HOST'] ?? '127.0.0.1';
 const MPD_PORT = Number(process.env['HOERMOND_MPD_PORT'] ?? 6600);
@@ -81,6 +82,10 @@ export function startIdleLoop(
           invalidateChaptersCache();
         }
         if (changedDatabase) {
+          // Der Verzeichnisbaum bestimmt die Gruppierung (library/grouping.ts) —
+          // nach einem Rescan muss er neu gelesen werden, sonst gruppiert die App
+          // neue Ordner noch nach dem alten Baum.
+          invalidateDirectoryIndex();
           getWindow()?.webContents.send('library:updated', { ts: Date.now() });
         }
         if (!stopped) s.write('idle player mixer playlist database update\n');

@@ -278,23 +278,32 @@ describe('Cover Pipeline', () => {
 
   it('should log errors to console.warn without throwing', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // Wie im Test oben: `artist` ist gesetzt, also läuft resolveCover() sonst bis
+    // MusicBrainz/Cover Art Archive raus und macht eine echte HTTP-Anfrage.
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn(async () => {
+      throw new Error('simulated network failure');
+    }) as unknown as typeof fetch;
 
-    const item: CoverItem = {
-      path: 'audiobooks/Author/Book',
-      type: 'audiobook',
-      title: 'Book',
-      artist: 'Author',
-    };
+    try {
+      const item: CoverItem = {
+        path: 'audiobooks/Author/Book',
+        type: 'audiobook',
+        title: 'Book',
+        artist: 'Author',
+      };
 
-    // Simulate directory with no audio files
-    const mediaDir = join(testTempDir, 'audiobooks', 'Author', 'Book');
-    await mkdir(mediaDir, { recursive: true });
-    await writeFile(join(mediaDir, 'readme.txt'), Buffer.from('No audio files'));
+      // Simulate directory with no audio files
+      const mediaDir = join(testTempDir, 'audiobooks', 'Author', 'Book');
+      await mkdir(mediaDir, { recursive: true });
+      await writeFile(join(mediaDir, 'readme.txt'), Buffer.from('No audio files'));
 
-    const result = await resolveCover(item);
-    expect(result).toBeNull();
-    // Note: actual error logging may or may not occur depending on implementation
-
-    warnSpy.mockRestore();
+      const result = await resolveCover(item);
+      expect(result).toBeNull();
+      // Note: actual error logging may or may not occur depending on implementation
+    } finally {
+      globalThis.fetch = realFetch;
+      warnSpy.mockRestore();
+    }
   });
 });
