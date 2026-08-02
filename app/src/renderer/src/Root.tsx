@@ -8,12 +8,15 @@ import S9PinDialog from './screens/S9PinDialog';
 import S10Settings from './screens/S10Settings';
 import MiniPlayer from './components/MiniPlayer';
 import BtToastBridge from './components/BtToastBridge';
+import { parentDirOf, rootDirFor } from './lib/folder-tree';
 import type { LibraryListResponse, MediaItem, PlayerState } from '@shared/ipc-contract';
 
 type Screen =
   | { name: 's0' }
   | { name: 's1' }
-  | { name: 'grid'; type: 'audiobook' | 'music' }
+  // `dir` ist das aktuell gezeigte Verzeichnis. Wurzel ist `audiobooks` bzw. `music`;
+  // tiefere Ebenen entstehen durch Tap auf eine Ordner-Kachel (Ordnermodell E3).
+  | { name: 'grid'; type: 'audiobook' | 'music'; dir: string }
   | { name: 's5'; item: MediaItem }
   | { name: 's9' }
   | { name: 's10' };
@@ -98,6 +101,18 @@ export default function Root(): React.JSX.Element {
     setScreen({ name: 's5', item });
   };
 
+  /**
+   * Verzeichnis, in dem eine Einheit liegt — Ziel der Zurück-Navigation aus dem Player.
+   *
+   * Der Unit-Pfad ist im Ordnermodell ein echter Pfad; das Elternverzeichnis ist also
+   * genau die Ebene, auf der die Kachel stand. Sicherheitsnetz: Liegt die Einheit
+   * unerwartet ohne Elternteil vor, wird die Wurzel des Typs genommen.
+   */
+  const dirOfUnit = (item: MediaItem): string => {
+    const parent = item.path.split('/').slice(0, -1).join('/');
+    return parent || rootDirFor(item.type);
+  };
+
   if (!screen) return <div className="boot-screen" />; // loading frame
 
   return (
@@ -108,7 +123,7 @@ export default function Root(): React.JSX.Element {
       {screen.name === 's0' && <S0Welcome onDone={finishOnboarding} />}
       {screen.name === 's1' && (
         <S1Start
-          onChoose={(type) => setScreen({ name: 'grid', type })}
+          onChoose={(type) => setScreen({ name: 'grid', type, dir: rootDirFor(type) })}
           onOpenParentGate={() => setScreen({ name: 's9' })}
         />
       )}
@@ -116,7 +131,14 @@ export default function Root(): React.JSX.Element {
         <LibraryGrid
           type={screen.type}
           data={filtered}
-          onBack={() => setScreen({ name: 's1' })}
+          dir={screen.dir}
+          // Zurück führt eine Ebene hoch; auf der Wurzel zum Startscreen.
+          onBack={() => {
+            const parent = parentDirOf(screen.dir, screen.type);
+            setScreen(parent ? { name: 'grid', type: screen.type, dir: parent } : { name: 's1' });
+          }}
+          onHome={() => setScreen({ name: 's1' })}
+          onOpenFolder={(dir) => setScreen({ name: 'grid', type: screen.type, dir })}
           onPlay={openPlayer}
           onOpenDetail={(item) => setDetail(item)}
         />
@@ -124,8 +146,14 @@ export default function Root(): React.JSX.Element {
       {screen.name === 's5' && (
         <S5Player
           item={screen.item}
+          // Zurück aus dem Player führt in den Ordner, in dem die Einheit liegt —
+          // nicht auf die Wurzel. Das Kind landet dort, wo es gestartet ist.
           onBack={() =>
-            setScreen({ name: 'grid', type: screen.item.type })
+            setScreen({
+              name: 'grid',
+              type: screen.item.type,
+              dir: dirOfUnit(screen.item),
+            })
           }
         />
       )}

@@ -1830,3 +1830,43 @@
     opacity: 0;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Ordner-Navigation (Ordnermodell E3)
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Rettungsanker neben dem Zurück-Knopf. Gleiche Größe und Form, damit beide
+   als Paar gelesen werden; die feste Position von .back-button bleibt links. */
+.home-button {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  flex: 0 0 64px;
+}
+
+/* Ordner-Kachel: gedämpfter Untergrund, damit sie sich vom Cover einer
+   Einheit abhebt, ohne mit ihr um Aufmerksamkeit zu konkurrieren. */
+.tile--folder .folder-cover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--bg-elevated, rgba(110, 84, 184, 0.08));
+}
+
+/* Anzahl der Titel im Ordner — als Zahl im Ordnerkörper. Rein bestätigend:
+   die Ordnerform trägt die Bedeutung, die Zahl ergänzt sie. */
+.folder-count {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 96px;
+  text-align: center;
+  font-size: 34px;
+  font-weight: 700;
+  color: #ffffff;
+  pointer-events: none;
+}

@@ -56,7 +56,10 @@ describe('LibraryGrid + SyncStatusIcon Integration', () => {
       <LibraryGrid
         type="audiobook"
         data={mockData}
+        dir="audiobooks"
         onBack={mockOnBack}
+        onHome={vi.fn()}
+        onOpenFolder={vi.fn()}
         onPlay={mockOnPlay}
         onOpenDetail={mockOnOpenDetail}
       />,
@@ -74,7 +77,10 @@ describe('LibraryGrid + SyncStatusIcon Integration', () => {
       <LibraryGrid
         type="audiobook"
         data={mockData}
+        dir="audiobooks"
         onBack={mockOnBack}
+        onHome={vi.fn()}
+        onOpenFolder={vi.fn()}
         onPlay={mockOnPlay}
         onOpenDetail={mockOnOpenDetail}
       />,
@@ -90,7 +96,10 @@ describe('LibraryGrid + SyncStatusIcon Integration', () => {
       <LibraryGrid
         type="audiobook"
         data={mockData}
+        dir="audiobooks"
         onBack={mockOnBack}
+        onHome={vi.fn()}
+        onOpenFolder={vi.fn()}
         onPlay={mockOnPlay}
         onOpenDetail={mockOnOpenDetail}
       />,
@@ -105,7 +114,10 @@ describe('LibraryGrid + SyncStatusIcon Integration', () => {
       <LibraryGrid
         type="audiobook"
         data={mockData}
+        dir="audiobooks"
         onBack={mockOnBack}
+        onHome={vi.fn()}
+        onOpenFolder={vi.fn()}
         onPlay={mockOnPlay}
         onOpenDetail={mockOnOpenDetail}
       />,
@@ -155,7 +167,10 @@ describe('LibraryGrid + SyncStatusIcon Integration', () => {
       <LibraryGrid
         type="audiobook"
         data={mockData}
+        dir="audiobooks"
         onBack={mockOnBack}
+        onHome={vi.fn()}
+        onOpenFolder={vi.fn()}
         onPlay={mockOnPlay}
         onOpenDetail={mockOnOpenDetail}
       />,

@@ -102,5 +102,10 @@
   "sync.log.empty": "Noch keine Synchronisierung",
   "sync.log.started": "Gestartet",
   "sync.log.completed": "Abgeschlossen",
-  "sync.log.error": "Fehler"
+  "sync.log.error": "Fehler",
+  "nav.home": "Zum Start",
+  "section.contents": "Inhalt",
+  "folder.open": "Ordner öffnen",
+  "folder.itemCount": "Titel",
+  "folder.oneItem": "Titel"
 }

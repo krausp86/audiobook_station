@@ -16,6 +16,36 @@ Audit-Findings behalten ihre ursprüngliche ID (K/W/N/M aus dem jeweiligen Audit
 
 ## Offen
 
+### DEV-02 — Drei Komponententests laufen überhaupt nicht 🔴
+
+**Gefunden:** 2026-08-02 beim Bau der Ordner-Navigation · **Schwere:** Major (Testabdeckung)
+
+`vitest.config.ts` filtert auf `include: ['src/**/*.test.ts']` — **ohne `.tsx`**. Damit
+werden drei vorhandene Testdateien stillschweigend übersprungen:
+
+- `src/renderer/src/screens/LibraryGrid.integration.test.tsx`
+- `src/renderer/src/screens/S1Start.integration.test.tsx`
+- `src/renderer/src/components/SyncStatusIcon.test.tsx`
+
+Sie tauchen in keiner Zusammenfassung auf, weder als bestanden noch als übersprungen.
+Aufgefallen ist es nur, weil ein gezielter Aufruf `No test files found` meldete.
+
+**Sie ließen sich auch gar nicht ausführen:** Die Dateien importieren
+`@testing-library/react`, und weder das noch `jsdom` steht in den
+`devDependencies`. `environment` ist zudem auf `'node'` gesetzt, für
+React-Rendering bräuchte es `'jsdom'`.
+
+Das ist keine Nachlässigkeit von heute — der Zustand besteht offenbar seit M7. Praktisch
+heißt es: **Für den Renderer gibt es derzeit keine einzige laufende Prüfung.**
+
+**Zu tun:** `jsdom` und `@testing-library/react` als devDependencies aufnehmen,
+`include` um `.tsx` erweitern, `environment` passend setzen (per-Datei über
+`// @vitest-environment jsdom` oder projektweit), dann die drei Dateien zum Laufen
+bringen. Die Ordner-Navigation ist deshalb bislang nur über die reine Ableitungslogik
+abgesichert (`lib/folder-tree.test.ts`, 17 Tests) und visuell am laufenden Gerät geprüft
+— nicht über die Komponenten selbst.
+
+
 ### DEV-01 — `npm test` kann alle DB-Tests nicht ausführen ✅ BEHOBEN
 
 **Gefunden und behoben:** 2026-08-02 · **Suite jetzt: 169/169 grün** (vorher 161/168)

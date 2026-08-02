@@ -324,13 +324,34 @@ Die **Gruppierungsregel** ist umgesetzt (`app/src/main/library/grouping.ts` +
 auf das Ordnermodell ab, bevor fortgesetzt wird. Details unter **MIG-01** in
 `known-issues.md`.
 
-### 2. Navigation am Gerät (E3)
+### ~~2. Navigation am Gerät (E3)~~ ✅ erledigt
 
-Der Renderer zeigt weiterhin ein flaches Grid. Navigationsordner erscheinen dort aktuell
-**gar nicht** — nur die Einheiten darunter. Das ist kein Fehler, sondern der Stand vor
-dem UI-Umbau: Die Gruppierung stimmt, die Hierarchie ist noch nicht sichtbar. Dafür
-braucht es Ordner-Kacheln, einen Navigationsstack und den Rettungsanker (siehe
-„Konflikt mit dem Design-Brief").
+Der Grid zeigt jetzt **eine Ebene** des Baums. Umgesetzt:
+
+- **Ordner-Kacheln** (`components/FolderTile.tsx`) in Ordnerform mit Reiter und der
+  Anzahl der Titel darunter — bewusst klar anders als ein quadratisches Cover, damit
+  „hier geht es weiter" und „hier spielt etwas" auf einen Blick trennbar sind.
+  Ordner stehen vor den Einheiten.
+- **Navigationsstack**: `Screen.grid` trägt ein `dir`. Zurück führt eine Ebene hoch, auf
+  der Wurzel zum Startscreen. Zurück aus dem Player führt in den Ordner, aus dem
+  gestartet wurde — nicht auf die Wurzel.
+- **Rettungsanker**: ein sichtbarer **Haus-Knopf** rechts neben Zurück, der erst
+  unterhalb der Wurzel erscheint. Bewusst ein sichtbares Element statt einer versteckten
+  Geste — für ein Kind, das gerade lesen lernt, ist ein Haus-Symbol ungleich
+  auffindbarer als ein langer Druck, den ihm niemand erklärt hat. Der Zurück-Knopf
+  behält dadurch seine feste Position oben links (Design-Brief Kap. 3.2).
+- **Titel** zeigt auf der Wurzel den Medientyp, darunter den Ordnernamen.
+- **„Zuletzt gehört"** bleibt auf der obersten Ebene — die Abkürzung, die tiefe
+  Navigation im Alltag überflüssig macht. In einem Unterordner wäre die Sektion
+  irreführend, weil sie Einheiten zeigte, die dort nicht liegen. Die Sektion darunter
+  heißt dort „Inhalt" statt „Alle".
+
+Der Baum wird im Renderer aus den Unit-Pfaden abgeleitet (`lib/folder-tree.ts`,
+17 Tests) — kein zusätzlicher IPC-Aufruf, keine Änderung am Architektur-Grundvertrag.
+
+**Noch offen dazu:** eine Tiefenbegrenzung ist nicht eingebaut (der Baum ist so tief wie
+das Dateisystem), und Komponententests fehlen wegen **DEV-02**. Geprüft wurde die
+Ableitungslogik als Unit-Test und die Oberfläche visuell am laufenden Gerät.
 
 ### 3. Web-Dateimanager (E5)
 
