@@ -8,6 +8,7 @@ werden unten verlinkt.
 | Datei | Inhalt |
 |-------|--------|
 | [`known-issues.md`](known-issues.md) | **Offene Bugs und Audit-Findings.** Zentrale Stelle — GitHub Issues sind nicht in Benutzung. |
+| [`pi-deploy-ordnermodell.md`](pi-deploy-ordnermodell.md) | Schritt-für-Schritt-Plan: Image sichern, Ordnermodell aufspielen, testen, zurückrollen |
 | [`ui-backlog.md`](ui-backlog.md) | Gestaltungs-Ideen für den nächsten UI-Durchgang (keine Bugs) |
 | [`milestones.md`](milestones.md) | Meilensteinplan M1–M7 (v1.0.0 abgeschlossen) |
 | [`briefing.md`](briefing.md) | Ursprüngliches Projekt-Briefing |
