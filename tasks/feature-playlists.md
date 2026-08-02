@@ -84,6 +84,48 @@ Abspielen wird er in `control.ts:20-36` wieder zerlegt und über
    `playback_position.media_path`.
 5. Die Ordnerstruktur, die man beim Befüllen bewusst anlegt, wird ignoriert.
 
+### Gemessen am Testbestand (2026-08-02)
+
+Die lokale Testumgebung (`dev/README.md`) reproduziert das live. **33 Dateien ergeben
+nach heutiger Regel 15 Kacheln:**
+
+```
+  10x  audiobooks/Benjamin Bluemchen/Im Zoo
+   1x  audiobooks/Einzelhoerbuch.m4b
+   4x  audiobooks/Lange Reihe/Der Schatz          ← CD1+CD2 korrekt zusammengefasst
+   1x  audiobooks/WasIstWas                       ← ⚠ Navigationsordner wird zur Kachel
+   3x  audiobooks/WasIstWas/Dinosaurier
+   2x  audiobooks/WasIstWas/Weltraum
+   2x  music/Anna/Kinderhits                      ← ⚠ Sampler zerfällt …
+   1x  music/Bernd/Kinderhits                     ←   … in drei Kacheln …
+   1x  music/Clara/Kinderhits                     ←   … statt einer
+   3x  music/Die Aerzte/Bester Sampler
+   1x  music/Die Ärzte/Noch ein Sampler           ← ⚠ Schreibvariante = eigene Kachel
+   1x  music/Diverse/Lieblingslieder              ← ⚠ nur 1 statt 2 Songs (s. u.)
+   1x  music/Ohne Tags/track-a.mp3                ← ⚠ je Datei eine Kachel
+   1x  music/Ohne Tags/track-b.mp3
+   1x  music/Übungskünstler/Sonderzeichen
+```
+
+Zwei Befunde, die vorher nur vermutet waren:
+
+- **Der Kopie-Fall E4 funktioniert im Tag-Modell überhaupt nicht.** Die Kopie von
+  „Lied A" in `Kinderlieder/Lieblingslieder/` behält ihre Tags und wird deshalb der
+  Sampler-Kachel `music/Anna/Kinderhits` zugeschlagen (daher dort 2x) — **quer über
+  Ordnergrenzen hinweg**. Die selbst zusammengestellte Playlist zeigt nur noch einen
+  statt zwei Songs. Im Ordnermodell verschwindet das Problem restlos.
+- **Ein loser `Sonnensystem.m4b` in `WasIstWas/` erzeugt eine Kachel namens
+  „WasIstWas"** — also eine Kachel, die wie der Navigationsordner heißt und genau eine
+  Datei enthält. Der Code kennt diesen Catch-all-Fall und schützt davor
+  (`list.ts:119-123`), aber nur auf der obersten Ebene.
+
+**Widerlegt:** Meine Sorge, die 3-Segment-Regel würde CDs zerlegen, war falsch herum —
+sie fasst `Der Schatz/CD1` und `CD2` **korrekt** zu einer Einheit zusammen. Ein naives
+`dirname(file)` würde das kaputtmachen. Die Sonderregel für Datenträger-Ordner ist also
+keine Kür, sondern nötig, sobald die 3-Segment-Regel fällt.
+
+### Hörbuch-Regel im Detail
+
 Für Hörbücher gilt eine andere, ebenfalls unpassende Regel (`list.ts:118`):
 
 ```ts

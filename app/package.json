@@ -13,6 +13,7 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
+    "dev:local": "bash ../dev/start-app.sh",
     "build": "npm run typecheck && electron-vite build",
     "test": "vitest run",
     "test:watch": "vitest",

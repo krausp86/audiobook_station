@@ -1,0 +1,25 @@
+# Lokale Testumgebung für Hörmond.
+#
+# Startet einen MPD, der den Test-Medienbestand aus dev/media/ indiziert und
+# auf Port 6601 lauscht (nicht 6600, damit ein eventuell laufender System-MPD
+# nicht kollidiert).
+#
+#   docker compose -f dev/docker-compose.yml up -d
+#
+# Der Web-Portal-Container (siehe tasks/feature-web-upload.md) kann später als
+# zweiter Service hier einziehen.
+
+services:
+  mpd:
+    image: vimagick/mpd:latest
+    container_name: hoermond-dev-mpd
+    ports:
+      - "127.0.0.1:6601:6600"
+    volumes:
+      - ./mpd.conf:/etc/mpd.conf:ro
+      - ./media:/var/lib/mpd/music:ro
+      - mpd-state:/var/lib/mpd
+    restart: unless-stopped
+
+volumes:
+  mpd-state:

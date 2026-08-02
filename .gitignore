@@ -1,0 +1,7 @@
+# Lokale Testumgebung (dev/) — generierte Inhalte, nichts davon gehört ins Repo.
+# Die Fixtures erzeugt dev/generate-fixtures.sh bei Bedarf neu.
+dev/media/
+dev/state.db
+dev/cache/
+dev/sync.log
+dev/fake-backlight

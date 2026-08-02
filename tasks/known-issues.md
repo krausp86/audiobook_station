@@ -16,6 +16,47 @@ Audit-Findings behalten ihre ursprüngliche ID (K/W/N/M aus dem jeweiligen Audit
 
 ## Offen
 
+### DEV-01 — `npm test` kann alle DB-Tests nicht ausführen 🔴
+
+**Gefunden:** 2026-08-02 beim Aufsetzen der lokalen Testumgebung · **Schwere:** Major (Testabdeckung)
+
+`npm test` meldet 7 von 168 Tests rot. Sechs davon (`src/main/player/resume.test.ts`,
+komplette Datei) scheitern nicht an der Logik, sondern am ABI:
+
+```
+The module '…/better-sqlite3/build/Release/better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 140. This version of Node.js requires
+NODE_MODULE_VERSION 115.
+```
+
+**Ursache:** `postinstall` ruft `electron-builder install-app-deps` und baut
+`better-sqlite3` gegen **Electrons** ABI (140). Vitest läuft aber auf dem **System-Node**
+(hier v20.20.2, ABI 115). Beides gleichzeitig geht mit einem Build nicht.
+
+**Konsequenz:** Jeder Test, der die DB anfasst, ist faktisch tot — dauerhaft, nicht
+sporadisch. Das betrifft ausgerechnet `resume.test.ts`, also die Absicherung des
+T4.00-Fixes (resume-on-stopped). Der Fix selbst ist im Code vorhanden und korrekt
+(`resume.ts:27`), aber **unbewacht**.
+
+Das erklärt auch rückblickend die Feststellung aus `m4-audit-2.md:282`, dass die
+Testabdeckung dünner ist als sie aussieht.
+
+**Lösungsrichtungen** (noch nicht entschieden):
+1. Die DB-Schicht in den Tests mocken statt echtes SQLite zu fahren — macht die Tests
+   unabhängig vom ABI, ist aber der größte Eingriff.
+2. Zweiter, Node-seitiger Build von `better-sqlite3` nur für Testläufe.
+3. Vitest unter Electrons Node laufen lassen.
+
+**Nicht empfohlen:** einfach `npm rebuild better-sqlite3` — das repariert die Tests und
+zerschießt dafür die App, bis `postinstall` wieder läuft.
+
+**Siebter roter Test:** `src/main/sleep/timer.test.ts > should auto-cancel timer if user
+pauses playback` ist zeitabhängig und **flaky** — mal rot, mal grün. Eigenes, kleineres
+Problem.
+
+---
+
 ### BT-01 — Gerät findet im Produktivmodus keine neuen Bluetooth-Geräte 🔵
 
 **Gemeldet:** 2026-08-02 · **Schwere:** Major · **Umgebung:** Pi, Produktivmodus (overlayfs aktiv)
@@ -202,6 +243,10 @@ nicht mehr vorhanden — nur noch in `main/mpd/chapters.test.ts` als Testfixture
 
 `resumeLast()` ignorierte den `stopped`-Zustand und startete beim Neustart immer die
 Wiedergabe. Fix in `m4-tasks.md:183-230`: `last_status` persistieren und beim Resume prüfen.
+Im Code verifiziert (2026-08-02): `resume.ts:27` — `if (last.last_status === 'stopped') return;`
+
+> ⚠️ Die zugehörigen Tests laufen wegen **DEV-01** nicht. Der Fix ist vorhanden, aber
+> nicht durch die Suite abgesichert.
 
 ---
 

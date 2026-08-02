@@ -113,6 +113,18 @@ npm install
 npm run dev
 ```
 
+`npm run dev` erwartet einen MPD auf `127.0.0.1:6600` und Medien unter
+`/mnt/hoermond` — also die Pi-Pfade. Für eine vollständige lokale Umgebung mit
+MPD-Container und generiertem Testbestand:
+
+```bash
+dev/generate-fixtures.sh
+docker compose -f dev/docker-compose.yml up -d
+cd app && npm run dev:local
+```
+
+Details und Testfälle: [`dev/README.md`](dev/README.md).
+
 TypeScript-Prüfung:
 
 ```bash
