@@ -6,6 +6,7 @@ import { registerIpcHandlers } from './ipc/register';
 import { startIdleLoop } from './mpd/idle';
 import { startPositionPersistence } from './player/persist';
 import { resumeLast } from './player/resume';
+import { runUnitPathReconciliation } from './library/reconcile-units';
 import { startSyncLogBridge } from './sync/watch-log';
 import { startBtListener } from './bt/listen';
 import { initSleepTimer, stopSleepService } from './sleep/timer';
@@ -45,8 +46,14 @@ function createWindow(dbError?: string): BrowserWindow {
     if (dbError) {
       win.webContents.send('app:dbError', { message: dbError });
     }
-    // Resume only after the renderer is loaded — no audio before the UI is ready
-    void resumeLast();
+    // Fortschritte auf das Ordnermodell abgleichen, BEVOR fortgesetzt wird —
+    // sonst greift resumeLast() noch auf einen veralteten Unit-Pfad zu (MIG-01).
+    // Laeuft nur einmal; bei Fehlern wird es beim naechsten Start wiederholt.
+    void (async () => {
+      if (!dbError) await runUnitPathReconciliation();
+      // Resume only after the renderer is loaded — no audio before the UI is ready
+      await resumeLast();
+    })();
   });
 
   return win;

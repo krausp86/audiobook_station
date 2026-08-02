@@ -318,23 +318,11 @@ sollte diesen Wechsel **vor dem Bestätigen anzeigen**, nicht klaglos ausführen
 Die **Gruppierungsregel** ist umgesetzt (`app/src/main/library/grouping.ts` +
 `directory-index.ts`, 20 Tests). Drei Stücke stehen noch aus:
 
-### 1. Migration bestehender Fortschritte — ⚠️ blockiert das Deployment
+### ~~1. Migration bestehender Fortschritte~~ ✅ erledigt
 
-`playback_position.media_path` hat für Musik bisher **virtuelle** Werte der Form
-`music/<AlbumArtist>/<Album>`. Die zeigen nach der Umstellung auf nichts mehr — das Kind
-verliert bei jedem Musiktitel die Stelle. Für Hörbücher ist die Lage besser: Die alte
-3-Segment-Regel und die neue Ordnerregel liefern für die übliche Ablage
-(`audiobooks/Autor/Titel/…`) **denselben** Pfad, der Fortschritt bleibt also erhalten.
-Betroffen sind dort nur Sonderfälle (lose Dateien in einem Navigationsordner, Bestände
-mit vier oder mehr Ebenen).
-
-**Eine reine SQL-Migration reicht nicht:** Um einen virtuellen Musikpfad auf den echten
-Ordner abzubilden, muss man wissen, welche Dateien diese Tags tragen — das weiß nur MPD.
-Nötig wäre also eine einmalige Abgleich-Routine beim Start, sobald MPD verfügbar ist.
-
-**Vor jedem Deployment auf den Pi zu entscheiden:** Abgleich bauen, oder den
-Musik-Fortschritt bewusst verwerfen (bei Liedern verschmerzbar, bei Hörbüchern nicht —
-und die sind ja weitgehend nicht betroffen).
+`library/reconcile-units.ts` gleicht die gespeicherten Fortschritte einmalig beim Start
+auf das Ordnermodell ab, bevor fortgesetzt wird. Details unter **MIG-01** in
+`known-issues.md`.
 
 ### 2. Navigation am Gerät (E3)
 

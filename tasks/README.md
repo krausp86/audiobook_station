@@ -19,7 +19,7 @@ werden unten verlinkt.
 |-------|--------|------|
 | [`dev-local-testing.md`](dev-local-testing.md) | Notiz | Lokale Testumgebung. **Vorbedingung für alles Weitere**, da das Gerät produktiv läuft. |
 | [`feature-web-upload.md`](feature-web-upload.md) | Entwurf | Web-Portal im Heimnetz zum Befüllen und Verwalten. Branch `webupload` — bisher nur dieses Dokument, kein Code. |
-| [`feature-playlists.md`](feature-playlists.md) | **teilweise umgesetzt** | Ordnerstruktur als Gruppierungsmodell. Regel steht (Branch `ordnermodell`); offen sind Migration der Fortschritte (**MIG-01**), Navigation am Gerät und der Web-Dateimanager. |
+| [`feature-playlists.md`](feature-playlists.md) | **teilweise umgesetzt** | Ordnerstruktur als Gruppierungsmodell. Regel und Fortschritts-Abgleich stehen (Branch `ordnermodell`); offen sind Navigation am Gerät und der Web-Dateimanager. |
 
 **Sinnvolle Reihenfolge:** lokale Testumgebung → Web-Portal → Playlists.
 Playlists brauchen das Portal als Editier-Oberfläche, und beide fassen Tabellen an,

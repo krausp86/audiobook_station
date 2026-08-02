@@ -275,24 +275,43 @@ Aus `m4-audit.md` nie explizit abgearbeitet, beim nächsten Anfassen der Stellen
 
 ---
 
-### MIG-01 — Musik-Fortschritte zeigen nach der Modellumstellung ins Leere 🔴
+### MIG-01 — Musik-Fortschritte zeigten nach der Modellumstellung ins Leere ✅ BEHOBEN
 
-**Gefunden:** 2026-08-02 mit der Umstellung auf das Ordnermodell · **Schwere:** Major
-· **Blockiert das Deployment auf den Pi**
+**Gefunden und behoben:** 2026-08-02 · **Schwere:** war Major, blockierte das Deployment
 
 `playback_position.media_path` enthielt für Musik **virtuelle** Pfade
 (`music/<AlbumArtist>/<Album>`). Seit der Ordnergruppierung gibt es die nicht mehr — die
-Zeilen verweisen auf Einheiten, die nicht existieren. Das Kind verliert bei Musik die Stelle.
+Zeilen hätten ins Leere gezeigt, das Kind hätte bei Musik die Stelle verloren.
 
-**Hörbücher sind weitgehend nicht betroffen:** Alte 3-Segment-Regel und neue Ordnerregel
-liefern für `audiobooks/Autor/Titel/…` denselben Pfad. Betroffen sind nur lose Dateien in
-Navigationsordnern und Bestände mit vier oder mehr Ebenen.
+**Lösung:** einmaliger Abgleich beim Start, `app/src/main/library/reconcile-units.ts`.
+Läuft in `did-finish-load` **vor** `resumeLast()` — sonst griffe Resume noch auf einen
+veralteten Pfad zu.
 
-**Eine SQL-Migration reicht nicht.** Die Abbildung virtueller Musikpfade auf echte Ordner
-braucht die Tag-Zuordnung aus MPD. Nötig wäre ein einmaliger Abgleich beim Start, sobald
-MPD verfügbar ist — oder die bewusste Entscheidung, den Musik-Fortschritt zu verwerfen.
+Der Kniff: Statt aus dem alten Pfad zurückzurechnen, wird die **alte Regel noch einmal
+ausgeführt** (`legacyUnitPathFor`). Damit lässt sich für jede Datei bestimmen, zu welcher
+*alten* und zu welcher *neuen* Kachel sie gehört — daraus entsteht eine exakte Zuordnung.
+Ein Präfix-Vergleich wäre falsch gewesen: Bei der alten Sammelkachel
+`audiobooks/WasIstWas` hätte er auch die Dateien der Unterordner eingesammelt, die schon
+damals eigene Kacheln waren. Genau das hat ein Test aufgedeckt.
 
-Details in `tasks/feature-playlists.md`, Abschnitt „Was noch fehlt".
+Bei mehreren Kandidaten entscheidet: meiste Dateien → Ordnername gleich dem alten
+Album-Namen → alphabetisch. Die mittlere Stufe ist nicht theoretisch: Liegt eine Datei
+zusätzlich als Kopie in einer Playlist (E4), steht es 1:1, und der Album-Name ist der
+verlässlichere Hinweis. Ohne diese Stufe landete der Fortschritt im ersten Realtest in
+der falschen Playlist.
+
+Weitere Eigenschaften:
+- **Kollisionen:** Laufen zwei alte Kacheln auf dieselbe neue zusammen (der zerfallene
+  Sampler), gewinnt die zuletzt gehörte Zeile.
+- **`track_index`** zeigte in die alte Wiedergabeliste. Hat die neue Einheit weniger
+  Tracks, wird auf 0 zurückgesetzt — lieber von vorn als an falscher Stelle.
+- **Nicht auflösbare Zeilen** bleiben unangetastet liegen statt gelöscht zu werden.
+- **Fehlschlag bei MPD-Problemen setzt den Merker nicht** — beim nächsten Start wird es
+  erneut versucht, statt Fortschritte stillschweigend zu verlieren.
+
+Am echten Bestand verifiziert: 5 Alt-Zeilen → 1 unverändert, 3 umgehängt, 1 bei einer
+Kollision zugunsten der neueren verworfen, 0 unauflösbar. Zweiter Start läuft nicht
+erneut. 16 Tests.
 
 ---
 
