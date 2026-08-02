@@ -2,6 +2,7 @@ import { getMpd } from './index';
 import { getChapters, chapterIndexForPosition } from './chapters';
 import { getDb } from '../db';
 import { getMaxVolume } from '../db/dao';
+import { unitPathFor } from '../library/grouping';
 import type { PlayerState } from '@shared/ipc-contract';
 
 /**
@@ -217,26 +218,8 @@ export async function getState(): Promise<PlayerState> {
     }
   }
 
-  // Compute unit path matching MediaItem.path (same grouping logic as listLibrary)
-  let currentUnitPath: string | null = null;
-  if (currentPath) {
-    const parts = currentPath.split('/');
-    const top = parts[0];
-    if (top === 'music') {
-      const albumArtist = song?.['AlbumArtist'] ?? song?.['Artist'];
-      const album = song?.['Album'];
-      if (albumArtist && album) {
-        currentUnitPath = `music/${albumArtist}/${album}`;
-      } else {
-        currentUnitPath = currentPath;
-      }
-    } else {
-      currentUnitPath = parts.slice(0, Math.min(3, parts.length - 1)).join('/') || parts[0];
-      if (!currentUnitPath.includes('/')) {
-        currentUnitPath = currentPath;
-      }
-    }
-  }
+  // Unit-Pfad passend zu MediaItem.path — gemeinsame Regel, siehe library/grouping.ts
+  const currentUnitPath = currentPath ? unitPathFor(currentPath, song ?? {}) : null;
 
   return {
     status: statusMap[mpdState as keyof typeof statusMap] ?? 'stopped',

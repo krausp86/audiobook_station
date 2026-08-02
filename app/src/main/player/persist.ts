@@ -2,6 +2,7 @@ import { getDb } from '../db';
 import { upsertPosition } from '../db/dao';
 import { getState } from '../mpd/control';
 import { getMpd } from '../mpd';
+import { unitPathFor, mediaTypeForPath } from '../library/grouping';
 
 const SAVE_INTERVAL_MS = 10_000;
 
@@ -19,35 +20,35 @@ async function saveNowInternal(): Promise<void> {
     const st = await getState();
     if (st.status !== 'playing' || !st.currentPath) return;
 
-    // Extract unit path — mirrors the grouping logic in listLibrary
     const parts = st.currentPath.split('/');
-    const top = parts[0];
-    let unitPath: string;
-    let displayTitle: string;
+    const type = mediaTypeForPath(st.currentPath);
 
-    if (top === 'music') {
+    // Unit-Pfad über die gemeinsame Regel (library/grouping.ts). Für Musik werden
+    // dafür die Tags des laufenden Songs gebraucht, für Hörbücher nicht — deshalb
+    // der Roundtrip nur in diesem Zweig.
+    let song: Record<string, string> | undefined;
+    if (type === 'music') {
       const mpd = await getMpd();
-      const [song] = (await mpd.send('currentsong')) ?? [];
-      const albumArtist = song?.['AlbumArtist'] ?? song?.['Artist'];
-      const album = song?.['Album'];
-      if (albumArtist && album) {
-        unitPath = `music/${albumArtist}/${album}`;
-        displayTitle = album;
-      } else {
-        unitPath = st.currentPath;
-        displayTitle = song?.['Title'] ?? parts[parts.length - 1]?.replace(/\.[^.]+$/, '') ?? unitPath;
-      }
+      [song] = (await mpd.send('currentsong')) ?? [];
+    }
+    const unitPath = unitPathFor(st.currentPath, song ?? {});
+
+    // Titel-Ableitung bleibt hier lokal: sie weicht bewusst von der in
+    // listLibrary ab (dort gewinnt der Album-Tag, hier der Ordnername) und
+    // landet nur per INSERT OR IGNORE in `media.title`. Siehe Kommentar unten.
+    let displayTitle: string;
+    if (type === 'music') {
+      displayTitle =
+        unitPath.startsWith('music/') && unitPath !== st.currentPath
+          ? (song?.['Album'] ?? unitPath)
+          : (song?.['Title'] ?? parts[parts.length - 1]?.replace(/\.[^.]+$/, '') ?? unitPath);
     } else {
-      unitPath = parts.slice(0, Math.min(3, parts.length - 1)).join('/') || parts[0];
-      if (!unitPath.includes('/')) {
-        unitPath = st.currentPath;
-      }
-      displayTitle = parts.length > 2
-        ? (parts[parts.length - 2] ?? unitPath)
-        : (parts[parts.length - 1]?.replace(/\.[^.]+$/, '') ?? unitPath);
+      displayTitle =
+        parts.length > 2
+          ? (parts[parts.length - 2] ?? unitPath)
+          : (parts[parts.length - 1]?.replace(/\.[^.]+$/, '') ?? unitPath);
     }
 
-    const type = top === 'audiobooks' ? 'audiobook' : 'music';
     const db = getDb();
 
     // Ensure the media item exists in the catalog

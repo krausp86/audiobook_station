@@ -275,7 +275,50 @@ Aus `m4-audit.md` nie explizit abgearbeitet, beim nächsten Anfassen der Stellen
 
 ---
 
+### GRP-01 — Titel-Ableitung weicht zwischen Bibliothek und Fortschritt ab 🔴
+
+**Gefunden:** 2026-08-02 beim Zusammenziehen der Gruppierungslogik · **Schwere:** Minor
+
+Der Unit-Pfad ist seit dem Refactor überall identisch (`library/grouping.ts`), die
+**Titel**-Ableitung aber nicht:
+
+| Fall | `list.ts:110-114` (Kachel-Beschriftung) | `persist.ts` (`media.title` in der DB) |
+|---|---|---|
+| Hörbuch mit `Album`-Tag | der **Album-Tag** | der **Ordnername** |
+| Musik ohne Tags | `Title` → Dateiname | `Title` → Dateiname |
+
+Für ein Hörbuch, dessen `Album`-Tag vom Ordnernamen abweicht, stehen also zwei
+verschiedene Titel im System. Sichtbar wird das nicht sofort: `persist.ts` schreibt per
+`INSERT OR IGNORE`, und die Grid-Beschriftung kommt aus `list.ts`. Die DB-Variante taucht
+nur dort auf, wo `media.title` direkt gelesen wird.
+
+Beim Refactor **bewusst unverändert gelassen** — eine Vereinheitlichung ist eine
+Verhaltensänderung und gehört zur Umstellung auf das Ordnermodell, wo der Titel ohnehin
+neu definiert wird (dann: der Ordnername).
+
+---
+
 ## Behoben
+
+### GRP-02 — Dritter Wurzelordner brach das Resume ✅
+
+**Gefunden und behoben:** 2026-08-02 beim Zusammenziehen der Gruppierungslogik
+
+Die drei Kopien der Gruppierungsregel verzweigten unterschiedlich:
+
+- `list.ts` prüfte `type === 'music'`, wobei `type` alles außer `audiobooks/` als Musik zählt
+- `persist.ts` und `control.ts` prüften `top === 'music'`, also wörtlich den Ordnernamen
+
+Für Medien direkt unter `audiobooks/` oder `music/` ist das gleichwertig. Für **jeden
+dritten Wurzelordner** — etwa `hoerspiele/` — nicht: Die Bibliothek gruppierte nach Tags,
+der Fortschritt wurde unter einem pfadbasierten Unit gespeichert. Die beiden Pfade trafen
+sich nie, das Resume war für solche Ordner also dauerhaft kaputt.
+
+Genau der Driftschaden, vor dem die Kommentare „mirrors the grouping logic in
+listLibrary" gewarnt hatten, ohne ihn zu verhindern. Jetzt entscheidet überall
+`mediaTypeForPath()`. Regressionstest in `grouping.test.ts`.
+
+---
 
 ### M4-N3 — `seekRelative` mit überflüssigem `getChapters`-Roundtrip ✅
 

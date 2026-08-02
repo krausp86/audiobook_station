@@ -2,6 +2,7 @@ import { getMpd } from '../mpd';
 import { getDb } from '../db';
 import { getAllPositions } from '../db/dao';
 import { sortLibrary } from './sort';
+import { unitPathFor, mediaTypeForPath } from './grouping';
 import { resolveCover } from '../cover';
 import type { MediaItem, LibraryListResponse, CoverPhase } from '@shared/ipc-contract';
 import type { BrowserWindow } from 'electron';
@@ -96,32 +97,9 @@ export async function listLibrary(
     const file = f['file'];
     if (!file) continue;
 
-    // Determine media type from top-level directory
-    const top = file.split('/')[0];
-    const type: 'audiobook' | 'music' = top === 'audiobooks' ? 'audiobook' : 'music';
-
-    // Unit path:
-    // - Audiobooks: group by directory structure (up to 3 path segments)
-    // - Music: group by AlbumArtist + Album tags (handles flat file structures)
     const parts = file.split('/');
-    let unitPath: string;
-    if (type === 'music') {
-      const albumArtist = f['AlbumArtist'] ?? f['Artist'];
-      const album = f['Album'];
-      if (albumArtist && album) {
-        unitPath = `music/${albumArtist}/${album}`;
-      } else {
-        // No proper tags: use file path directly (single file = own tile)
-        unitPath = file;
-      }
-    } else {
-      unitPath = parts.slice(0, Math.min(3, parts.length - 1)).join('/') || parts[0];
-      // Files directly in the top-level dir (e.g. audiobooks/track.mp3) would get
-      // unitPath = "audiobooks" — a confusing catch-all tile. Treat each as its own unit.
-      if (!unitPath.includes('/')) {
-        unitPath = file;
-      }
-    }
+    const type = mediaTypeForPath(file);
+    const unitPath = unitPathFor(file, f);
 
     // Accumulate durations
     const dur = f['Time'] ? parseInt(f['Time'], 10) : 0;
